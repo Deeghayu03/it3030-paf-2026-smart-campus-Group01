@@ -1,0 +1,29 @@
+@import './RegisterPage.css';
+
+.btn-google-oauth {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1E293B;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  margin-top: 16px;
+}
+
+.btn-google-oauth:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+}
+
+.btn-google-oauth svg {
+  flex-shrink: 0;
+}
