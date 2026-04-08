@@ -22,8 +22,12 @@ public class ResourceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Resource>> getAllResources() {
-        return ResponseEntity.ok(resourceService.getAllResources());
+    public ResponseEntity<List<Resource>> getResources(
+            @RequestParam(required = false) Resource.ResourceType type,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) Integer minCapacity
+    ) {
+        return ResponseEntity.ok(resourceService.getFilteredResources(type, location, minCapacity));
     }
 
     @GetMapping("/{id}")

@@ -12,7 +12,6 @@ const initialState = {
     location: "",
     availableFrom: "",
     availableTo: "",
-    status: "ACTIVE",
     description: "",
 };
 
@@ -52,10 +51,12 @@ const AddResourcePage = () => {
             newErrors.type = "Resource type is required.";
         }
 
-        if (!formData.capacity) {
-            newErrors.capacity = "Capacity is required.";
-        } else if (Number(formData.capacity) < 1) {
-            newErrors.capacity = "Capacity must be at least 1.";
+        if (formData.type !== "EQUIPMENT") {
+            if (!formData.capacity) {
+                newErrors.capacity = "Capacity is required.";
+            } else if (Number(formData.capacity) < 1) {
+                newErrors.capacity = "Capacity must be at least 1.";
+            }
         }
 
         if (!formData.location.trim()) {
@@ -78,10 +79,6 @@ const AddResourcePage = () => {
             newErrors.availableTo = "Available to time must be later than available from time.";
         }
 
-        if (!formData.status) {
-            newErrors.status = "Status is required.";
-        }
-
         return newErrors;
     };
 
@@ -98,13 +95,17 @@ const AddResourcePage = () => {
             setServerError("");
 
             const payload = {
-                ...formData,
-                capacity: Number(formData.capacity),
                 name: formData.name.trim(),
+                type: formData.type,
                 location: formData.location.trim(),
+                availableFrom: formData.availableFrom,
+                availableTo: formData.availableTo,
                 description: formData.description.trim(),
             };
 
+            if (formData.type !== "EQUIPMENT") {
+                payload.capacity = Number(formData.capacity);
+            }
             await axios.post("http://localhost:8080/api/resources", payload, {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -178,16 +179,20 @@ const AddResourcePage = () => {
                             </div>
 
                             <div>
-                                <label style={labelStyle}>Capacity</label>
-                                <input
-                                    type="number"
-                                    name="capacity"
-                                    value={formData.capacity}
-                                    onChange={handleChange}
-                                    placeholder="Enter capacity"
-                                    style={inputStyle}
-                                />
-                                {errors.capacity && <p style={fieldErrorStyle}>{errors.capacity}</p>}
+                                {formData.type !== "EQUIPMENT" && (
+                                    <div>
+                                        <label style={labelStyle}>Capacity</label>
+                                        <input
+                                            type="number"
+                                            name="capacity"
+                                            value={formData.capacity}
+                                            onChange={handleChange}
+                                            placeholder="Enter capacity"
+                                            style={inputStyle}
+                                        />
+                                        {errors.capacity && <p style={fieldErrorStyle}>{errors.capacity}</p>}
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -231,19 +236,7 @@ const AddResourcePage = () => {
                                 )}
                             </div>
 
-                            <div>
-                                <label style={labelStyle}>Status</label>
-                                <select
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    style={inputStyle}
-                                >
-                                    <option value="ACTIVE">Active</option>
-                                    <option value="OUT_OF_SERVICE">Out of Service</option>
-                                </select>
-                                {errors.status && <p style={fieldErrorStyle}>{errors.status}</p>}
-                            </div>
+
 
                             <div style={{ gridColumn: "1 / -1" }}>
                                 <label style={labelStyle}>Description</label>
