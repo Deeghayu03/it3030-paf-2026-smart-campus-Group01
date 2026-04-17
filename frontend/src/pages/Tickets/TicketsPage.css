@@ -1,0 +1,244 @@
+.tickets-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Stats Section */
+.tickets-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.stat-item {
+  background: var(--bg-white);
+  padding: 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-top: 4px solid var(--primary);
+}
+
+.stat-item.open { border-top-color: #2563EB; }
+.stat-item.in-progress { border-top-color: #F59E0B; }
+.stat-item.resolved { border-top-color: #10B981; }
+
+.stat-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Form Section */
+.report-panel {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 16px 24px;
+  background: var(--primary-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.ticket-form {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-group.full {
+  grid-column: span 2;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+}
+
+.form-textarea {
+  height: 100px;
+  resize: vertical;
+}
+
+.upload-zone {
+  border: 2px dashed var(--border);
+  padding: 20px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-zone:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.preview-grid {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.preview-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* List Section */
+.tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ticket-card {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border-left: 6px solid #CBD5E1;
+}
+
+.ticket-card.OPEN { border-left-color: #2563EB; }
+.ticket-card.IN_PROGRESS { border-left-color: #F59E0B; }
+.ticket-card.RESOLVED { border-left-color: #10B981; }
+
+.ticket-summary {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.ticket-info h4 {
+  margin-bottom: 4px;
+}
+
+.ticket-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 12px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.priority-CRITICAL { background: #FEE2E2; color: #991B1B; }
+.badge.priority-HIGH { background: #FFEDD5; color: #9A3412; }
+.badge.priority-MEDIUM { background: #FEF3C7; color: #92400E; }
+.badge.priority-LOW { background: #DCFCE7; color: #166534; }
+
+.ticket-detail {
+  padding: 0 24px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-content {
+  padding: 16px 0;
+  white-space: pre-wrap;
+}
+
+.attachments-section {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.attachment-thumb {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* Comments */
+.comments-section {
+  margin-top: 24px;
+  background: var(--bg-light);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+}
+
+.comment-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.comment-bubble {
+  flex: 1;
+  background: var(--bg-white);
+  padding: 10px 14px;
+  border-radius: 0 12px 12px 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.comment-author {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+}
+
+.comment-time {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+.comment-text {
+  font-size: 0.9rem;
+}
+
+.add-comment {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}

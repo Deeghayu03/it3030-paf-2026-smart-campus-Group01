@@ -8,8 +8,30 @@ export const ticketService = {
   getMyTickets: () => {
     return axiosInstance.get('/tickets/my');
   },
-  addComment: (ticketId, comment) => {
-    return axiosInstance.post(`/tickets/${ticketId}/comments`, { comment });
+  getTicketDetail: (id) => {
+    return axiosInstance.get(`/tickets/${id}`);
+  },
+  updateStatus: (id, data) => {
+    return axiosInstance.put(`/tickets/${id}/status`, data);
+  },
+  uploadAttachments: (ticketId, formData) => {
+    return axiosInstance.post(`/tickets/${ticketId}/attachments`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+  deleteAttachment: (attachId) => {
+    return axiosInstance.delete(`/tickets/attachments/${attachId}`);
+  },
+  addComment: (ticketId, content) => {
+    return axiosInstance.post(`/tickets/${ticketId}/comments`, { content });
+  },
+  deleteComment: (commentId) => {
+    return axiosInstance.delete(`/comments/${commentId}`);
+  },
+  getAllTickets: () => {
+    return axiosInstance.get('/tickets');
   }
 };
 
