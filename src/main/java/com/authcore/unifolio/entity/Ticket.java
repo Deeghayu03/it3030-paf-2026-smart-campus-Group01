@@ -55,8 +55,23 @@ public class Ticket {
     }
 
     public enum TicketStatus {
-        OPEN, IN_PROGRESS, RESOLVED, CLOSED, REJECTED
+        OPEN, IN_PROGRESS, RESOLVED, CLOSED, REJECTED;
+
+        public boolean canTransitionTo(TicketStatus newStatus) {
+            if (this == newStatus) return true;
+            return switch (this) {
+                case OPEN -> newStatus == IN_PROGRESS || newStatus == REJECTED || newStatus == CLOSED;
+                case IN_PROGRESS -> newStatus == RESOLVED || newStatus == CLOSED;
+                case RESOLVED -> newStatus == CLOSED;
+                case CLOSED, REJECTED -> false;
+            };
+        }
     }
+
+    private LocalDateTime slaDeadline;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean slaBreached = false;
 
     @PrePersist
     protected void onCreate() {
@@ -64,6 +79,19 @@ public class Ticket {
         this.updatedAt = LocalDateTime.now();
         if (this.status == null) {
             this.status = TicketStatus.OPEN;
+        }
+        if (!this.slaBreached) {
+            this.slaBreached = false;
+        }
+        
+        // Initial SLA calculation based on priority
+        if (this.priority != null && this.slaDeadline == null) {
+            this.slaDeadline = switch (this.priority) {
+                case LOW -> createdAt.plusDays(3);
+                case MEDIUM -> createdAt.plusDays(2);
+                case HIGH -> createdAt.plusHours(24);
+                case CRITICAL -> createdAt.plusHours(4);
+            };
         }
     }
 
