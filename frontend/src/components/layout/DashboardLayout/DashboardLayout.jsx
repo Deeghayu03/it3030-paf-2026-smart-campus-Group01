@@ -23,6 +23,7 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
     { path: ROUTES.RESOURCES, label: 'Campus Resources', icon: '🏛️' },
     { path: ROUTES.BOOKINGS, label: 'My Bookings', icon: '📅' },
     { path: ROUTES.TICKETS, label: 'Maintenance Hub', icon: '🔧' },
+    { path: ROUTES.KANBAN, label: 'Ticket Board', icon: '📋' },
     { path: ROUTES.NOTIFICATIONS, label: 'Notifications', icon: '🔔' }
   ];
 
