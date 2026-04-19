@@ -6,7 +6,7 @@ const TicketsPage = () => {
   return (
     <DashboardLayout title="Maintenance Hub">
       <div className="coming-soon-card">
-        <div className="coming-soon-icon">🔧</div>
+        <div className="coming-soon-icon">T</div>
         <h2>Maintenance Hub</h2>
         <p>This module is currently under development. Here you will be able to report maintenance issues and track your tickets.</p>
       </div>
