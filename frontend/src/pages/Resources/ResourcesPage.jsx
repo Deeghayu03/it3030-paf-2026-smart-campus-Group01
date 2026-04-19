@@ -6,7 +6,7 @@ const ResourcesPage = () => {
   return (
     <DashboardLayout title="Campus Resources">
       <div className="coming-soon-card">
-        <div className="coming-soon-icon">🏛️</div>
+        <div className="coming-soon-icon">R</div>
         <h2>Campus Resources</h2>
         <p>This module is currently under development. Here you will be able to browse and book lecture halls, labs, and equipment.</p>
       </div>
