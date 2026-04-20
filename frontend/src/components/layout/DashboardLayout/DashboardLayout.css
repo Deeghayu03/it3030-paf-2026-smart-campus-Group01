@@ -1,7 +1,7 @@
 .dashboard-wrapper {
   display: flex;
   min-height: 100vh;
-  background-color: var(--bg-light);
+  background-color: #F8FAFC;
 }
 
 /* SIDEBAR STYLES */
@@ -9,132 +9,88 @@
   position: fixed;
   left: 0;
   top: 0;
-  width: 64px;
+  width: 260px;
   height: 100vh;
-  background: linear-gradient(180deg, #1B4332 0%, #2D6A4F 50%, #52B788 100%);
-  border-right: none;
+  background-color: var(--bg-white);
+  border-right: 1px solid #E2E8F0;
   display: flex;
   flex-direction: column;
   z-index: 100;
-  transition: width 0.3s ease;
-  overflow: hidden;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-  color: white;
-}
-
-.dashboard-sidebar:hover {
-  width: 240px;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
 }
 
 .sidebar-logo {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
-  background: rgba(0,0,0,0.2);
-  color: white;
-  font-weight: 800;
+  padding: 24px 20px;
   font-size: 1.5rem;
-  white-space: nowrap;
+  font-weight: 800;
+  color: var(--primary);
 }
 
-.logo-short {
-  display: inline-block;
-  min-width: 36px;
-  text-align: center;
-  color: white;
-}
-
-.logo-full {
-  opacity: 0;
-  margin-left: 12px;
-  transition: opacity 0.3s ease;
-  color: white;
-}
-
-.dashboard-sidebar:hover .logo-full {
-  opacity: 1;
+.sidebar-nav-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 16px 20px 8px;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   flex: 1;
-  padding-top: 16px;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
-  height: 48px;
-  padding: 0 14px;
+  gap: 12px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin: 2px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
   text-decoration: none;
-  color: white;
-  opacity: 0.8;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
-  white-space: nowrap;
-  position: relative;
+  color: #64748B;
+  font-weight: 500;
   border-left: 3px solid transparent;
 }
 
 .sidebar-link:hover {
-  background-color: rgba(255,255,255,0.15);
-  opacity: 1;
-  color: white;
+  background-color: #EFF6FF;
+  color: #2563EB;
 }
 
 .sidebar-link.active {
-  background-color: rgba(255,255,255,0.2);
-  opacity: 1;
-  color: white;
-  border-left: 3px solid white;
+  background-color: #EFF6FF;
+  color: #2563EB;
+  font-weight: 600;
+  border-left: 3px solid #2563EB;
 }
 
-.icon-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  flex-shrink: 0;
-  border: 2px solid white;
-}
-
-.sidebar-label {
-  opacity: 0;
-  margin-left: 16px;
-  font-weight: 500;
-  transition: opacity 0.3s ease;
-  font-size: 0.95rem;
-}
-
-.dashboard-sidebar:hover .sidebar-label {
-  opacity: 1;
+.sidebar-icon {
+  font-size: 1.25rem;
 }
 
 /* SIDEBAR FOOTER */
 .sidebar-footer {
-  background: rgba(0,0,0,0.2);
-  padding: 14px;
-  overflow: hidden;
+  padding: 16px 20px;
+  border-top: 1px solid #E2E8F0;
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 12px;
 }
 
 .avatar-circle {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: white;
-  color: var(--primary);
+  background-color: #2563EB;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,26 +102,21 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  white-space: nowrap;
-}
-
-.dashboard-sidebar:hover .user-info {
-  opacity: 1;
 }
 
 .user-name {
   font-weight: 600;
-  color: white;
+  color: #1E293B;
   font-size: 0.875rem;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .user-email {
   font-size: 0.75rem;
-  color: white;
+  color: #64748B;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -173,49 +124,35 @@
 .logout-btn {
   width: 100%;
   padding: 10px;
+  margin-top: 12px;
   background: none;
-  border: 1px solid rgba(255,255,255,0.4);
-  color: white;
+  border: none;
+  color: #EF4444;
   cursor: pointer;
   border-radius: 8px;
-  font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.3s ease, background-color 0.2s;
-  pointer-events: none;
-  display: flex;
-  justify-content: center;
-}
-
-.dashboard-sidebar:hover .logout-btn {
-  opacity: 1;
-  pointer-events: auto;
+  font-weight: 500;
+  transition: background-color 0.2s;
 }
 
 .logout-btn:hover {
-  background-color: rgba(255,255,255,0.1);
+  background-color: #FEF2F2;
 }
 
 /* MAIN CONTENT AREA */
 .dashboard-main {
-  margin-left: 64px;
+  margin-left: 260px;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  width: calc(100% - 64px);
-  transition: margin-left 0.3s ease, width 0.3s ease;
-}
-
-.dashboard-sidebar:hover ~ .dashboard-main {
-  margin-left: 240px;
-  width: calc(100% - 240px);
+  width: calc(100% - 260px);
 }
 
 /* TOP NAVBAR */
 .dashboard-topbar {
   height: 64px;
   background-color: var(--bg-white);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #E2E8F0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -236,14 +173,14 @@
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: var(--text-secondary);
+  color: #475569;
   cursor: pointer;
 }
 
 .page-title {
   font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-weight: 600;
+  color: #1E293B;
   margin: 0;
 }
 
@@ -253,10 +190,26 @@
   gap: 20px;
 }
 
-.student-portal-text {
-  color: var(--primary); /* #2D6A4F via var */
-  font-weight: 600;
-  font-size: 1rem;
+.notification-bell {
+  position: relative;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #EF4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dashboard-content {
@@ -272,24 +225,15 @@
 @media (max-width: 1024px) {
   .dashboard-sidebar {
     transform: translateX(-100%);
-    width: 240px;
   }
 
   .dashboard-sidebar.mobile-open {
     transform: translateX(0);
   }
 
-  .dashboard-sidebar .logo-full,
-  .dashboard-sidebar .sidebar-label,
-  .dashboard-sidebar .user-info,
-  .dashboard-sidebar .logout-btn {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
   .dashboard-main {
-    margin-left: 0 !important;
-    width: 100% !important;
+    margin-left: 0;
+    width: 100%;
   }
 
   .hamburger-btn {
