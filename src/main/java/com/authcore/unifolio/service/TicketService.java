@@ -42,6 +42,9 @@ public class TicketService {
 
     @Autowired
     private TicketHistoryRepository historyRepository;
+    
+    @Autowired
+    private NotificationService notificationService;
 
     @Value("${app.upload.dir:uploads/ticket-attachments}")
     private String uploadDir;
@@ -80,6 +83,20 @@ public class TicketService {
         
         // Log initial creation
         logHistory(savedTicket, null, Ticket.TicketStatus.OPEN, user, "Ticket created");
+
+        // Notify Admins if Critical
+        if (savedTicket.getPriority() == Ticket.TicketPriority.CRITICAL) {
+            List<User> admins = userRepository.findByRole(User.Role.ADMIN);
+            for (User admin : admins) {
+                notificationService.createNotification(
+                    admin, 
+                    "URGENT: New critical ticket #" + savedTicket.getId() + " at " + savedTicket.getLocation(),
+                    Notification.NotificationType.TICKET_CREATED,
+                    savedTicket.getId(),
+                    "TICKET"
+                );
+            }
+        }
         
         return mapToResponse(savedTicket);
     }
@@ -130,7 +147,20 @@ public class TicketService {
         if (request.getRejectionReason() != null) {
             ticket.setRejectionReason(request.getRejectionReason());
         }
-        ticket.setAssignedTo(user);
+
+        // ─── Explicit Assignment ───
+        User assignToUser = user; // default to the one updating
+        if (request.getAssignedToEmail() != null && !request.getAssignedToEmail().isBlank()) {
+            assignToUser = userRepository.findByEmail(request.getAssignedToEmail())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", request.getAssignedToEmail()));
+            
+            if (assignToUser.getRole() == User.Role.USER) {
+                throw new AccessDeniedException("Cannot assign ticket to a regular User role");
+            }
+        }
+        
+        boolean isNewAssignment = ticket.getAssignedTo() == null || !ticket.getAssignedTo().getEmail().equals(assignToUser.getEmail());
+        ticket.setAssignedTo(assignToUser);
 
         Ticket updatedTicket = ticketRepository.save(ticket);
         
@@ -138,6 +168,30 @@ public class TicketService {
         String notes = request.getStatus() == Ticket.TicketStatus.RESOLVED ? request.getResolutionNotes() 
                      : request.getStatus() == Ticket.TicketStatus.REJECTED ? request.getRejectionReason() : null;
         logHistory(updatedTicket, oldStatus, request.getStatus(), user, notes);
+
+        // Notify Reporting User of Status Change
+        Notification.NotificationType type = request.getStatus() == Ticket.TicketStatus.RESOLVED 
+                ? Notification.NotificationType.TICKET_RESOLVED 
+                : Notification.NotificationType.TICKET_UPDATED;
+
+        notificationService.createNotification(
+            updatedTicket.getReportedBy(),
+            "Your ticket #" + updatedTicket.getId() + " is now " + updatedTicket.getStatus(),
+            type,
+            updatedTicket.getId(),
+            "TICKET"
+        );
+
+        // Notify Assigned Technician if newly assigned
+        if (isNewAssignment) {
+            notificationService.createNotification(
+                assignToUser,
+                "Ticket #" + updatedTicket.getId() + " has been assigned to you",
+                Notification.NotificationType.TICKET_ASSIGNED,
+                updatedTicket.getId(),
+                "TICKET"
+            );
+        }
 
         return mapToResponse(updatedTicket);
     }

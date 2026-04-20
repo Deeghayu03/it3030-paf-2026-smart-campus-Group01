@@ -10,6 +10,9 @@ export const notificationService = {
   },
   markAllAsRead: () => {
     return axiosInstance.put('/notifications/read-all');
+  },
+  getUnreadCount: () => {
+    return axiosInstance.get('/notifications/unread-count');
   }
 };
 

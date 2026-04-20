@@ -56,6 +56,9 @@ export const ticketService = {
     const response = await axiosInstance.get('/tickets/stats');
     return response.data;
   },
+  getTechnicians: () => {
+    return axiosInstance.get('/users/technicians');
+  }
 };
 
 export default ticketService;

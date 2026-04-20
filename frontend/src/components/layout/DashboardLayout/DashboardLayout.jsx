@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../constants/routes';
 import useAuth from '../../../hooks/useAuth';
+import notificationService from '../../../services/notificationService';
 import './DashboardLayout.css';
 
 const DashboardLayout = ({ title, notificationCount = 0, children }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const studentName = localStorage.getItem('name') || 'Student';
   const studentEmail = localStorage.getItem('email') || '';
@@ -17,6 +19,22 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
     logout();
     navigate(ROUTES.LOGIN);
   };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await notificationService.getUnreadCount();
+      setUnreadCount(response.data.count);
+    } catch (err) {
+      console.error("Failed to fetch notification count", err);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchUnreadCount();
+    // Poll every 30 seconds for new notifications
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const navItems = [
     { path: ROUTES.DASHBOARD, label: 'Dashboard', icon: '🏠' },
@@ -88,10 +106,10 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
           </div>
           
           <div className="topbar-right">
-            <div className="notification-bell">
+            <div className="notification-bell" onClick={() => navigate(ROUTES.NOTIFICATIONS)} style={{cursor: 'pointer'}}>
               🔔
-              {notificationCount > 0 && (
-                <span className="notification-badge">{notificationCount}</span>
+              {unreadCount > 0 && (
+                <span className="notification-badge">{unreadCount}</span>
               )}
             </div>
             <div className="avatar-circle topbar-avatar">{initial}</div>

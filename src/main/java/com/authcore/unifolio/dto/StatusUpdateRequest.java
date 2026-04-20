@@ -8,4 +8,5 @@ public class StatusUpdateRequest {
     private Ticket.TicketStatus status;
     private String resolutionNotes;
     private String rejectionReason;
+    private String assignedToEmail;
 }

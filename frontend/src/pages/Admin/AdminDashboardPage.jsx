@@ -14,8 +14,10 @@ const AdminDashboardPage = () => {
   const [updateData, setUpdateData] = useState({
     status: '',
     resolutionNotes: '',
-    rejectionReason: ''
+    rejectionReason: '',
+    assignedToEmail: ''
   });
+  const [technicians, setTechnicians] = useState([]);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -37,8 +39,18 @@ const AdminDashboardPage = () => {
     }
   };
 
+  const fetchTechnicians = async () => {
+    try {
+      const response = await ticketService.getTechnicians();
+      setTechnicians(response.data);
+    } catch (err) {
+      console.error("Failed to fetch technicians", err);
+    }
+  };
+
   useEffect(() => {
     fetchAllTickets();
+    fetchTechnicians();
   }, []);
 
   useEffect(() => {
@@ -65,7 +77,8 @@ const AdminDashboardPage = () => {
     setUpdateData({
       status: ticket.status,
       resolutionNotes: ticket.resolutionNotes || '',
-      rejectionReason: ticket.rejectionReason || ''
+      rejectionReason: ticket.rejectionReason || '',
+      assignedToEmail: ticket.assignedToEmail || ''
     });
   };
 
@@ -288,6 +301,21 @@ const AdminDashboardPage = () => {
                       <option value="IN_PROGRESS">In Progress</option>
                       <option value="RESOLVED">Resolved</option>
                       <option value="REJECTED">Rejected</option>
+                    </select>
+                  </div>
+ 
+                  <div className="form-field">
+                    <label>Assign To</label>
+                    <select 
+                      className="filter-select" 
+                      style={{width: '100%'}} 
+                      value={updateData.assignedToEmail}
+                      onChange={e => setUpdateData({...updateData, assignedToEmail: e.target.value})}
+                    >
+                      <option value="">-- No Change / Auto --</option>
+                      {technicians.map(tech => (
+                        <option key={tech.id} value={tech.email}>{tech.email} (Technician)</option>
+                      ))}
                     </select>
                   </div>
 
