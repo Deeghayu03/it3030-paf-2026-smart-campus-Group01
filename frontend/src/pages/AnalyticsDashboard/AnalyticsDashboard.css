@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --ad-bg:        #0c0e14;
+  --ad-surface:   #13161f;
+  --ad-surface-2: #1a1e2a;
+  --ad-border:    rgba(255,255,255,0.06);
+  --ad-border-2:  rgba(255,255,255,0.10);
+  --ad-text:      #dde1ed;
+  --ad-muted:     #6e7592;
+  --ad-hint:      #3d4360;
+}
+
+.ad-root {
+  min-height: 100vh;
+  background: var(--ad-bg);
+  color: var(--ad-text);
+  font-family: 'DM Sans', sans-serif;
+  padding: 28px 32px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Loading / Error ─────────────────────────────────────────────────── */
+.ad-loading, .ad-error {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; height: 60vh;
+  color: var(--ad-muted); font-size: 14px;
+}
+.ad-spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--ad-border-2);
+  border-top-color: #5b8cff;
+  animation: ad-spin 0.75s linear infinite;
+}
+@keyframes ad-spin { to { transform: rotate(360deg); } }
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.ad-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 28px;
+}
+.ad-title {
+  font-size: 22px; font-weight: 600; margin: 0 0 4px;
+  color: var(--ad-text);
+}
+.ad-subtitle {
+  font-size: 12px; color: var(--ad-muted); margin: 0;
+}
+.ad-header-badge {
+  font-size: 11px; font-family: 'DM Mono', monospace;
+  color: var(--ad-muted); padding: 5px 12px;
+  border: 1px solid var(--ad-border);
+  border-radius: 20px; background: var(--ad-surface);
+}
+
+/* ── Stat cards grid ─────────────────────────────────────────────────── */
+.ad-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) { .ad-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .ad-stats-grid { grid-template-columns: 1fr; } }
+
+.ad-stat-card {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  animation: ad-fade-up 0.4s ease both;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.ad-stat-card:hover {
+  border-color: var(--ad-border-2);
+  transform: translateY(-1px);
+}
+
+@keyframes ad-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ad-stat-accent {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.ad-stat-label {
+  font-size: 11px; color: var(--ad-muted);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin: 0 0 10px;
+}
+.ad-stat-value {
+  font-size: 28px; font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  color: var(--ad-text); margin: 0 0 4px;
+  line-height: 1;
+}
+.ad-stat-sub {
+  font-size: 11px; color: var(--ad-hint); margin: 0;
+}
+
+/* ── Charts row ──────────────────────────────────────────────────────── */
+.ad-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 800px) { .ad-charts-row { grid-template-columns: 1fr; } }
+
+/* ── Chart section ───────────────────────────────────────────────────── */
+.ad-chart-section {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  animation: ad-fade-up 0.4s ease both;
+  transition: border-color 0.2s;
+}
+.ad-chart-section:hover { border-color: var(--ad-border-2); }
+
+.ad-section-title {
+  font-size: 12px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ad-hint); margin: 0 0 18px;
+}
+.ad-chart-wrap { width: 100%; }
+.ad-chart-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; font-size: 13px; color: var(--ad-hint);
+  font-style: italic;
+}
+
+/* ── Recharts tooltip override ───────────────────────────────────────── */
+.ad-tooltip {
+  background: var(--ad-surface-2);
+  border: 1px solid var(--ad-border-2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'DM Sans', sans-serif;
+}
+.ad-tooltip-label {
+  font-size: 11px; color: var(--ad-muted);
+  margin: 0 0 6px; text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.ad-tooltip-val {
+  font-size: 13px; font-weight: 500; margin: 0;
+}

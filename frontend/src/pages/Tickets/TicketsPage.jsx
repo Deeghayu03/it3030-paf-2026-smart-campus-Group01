@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import Button from '../../components/ui/Button/Button';
 import ticketService from '../../services/ticketService';
@@ -8,7 +9,7 @@ const TicketsPage = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [expandedTicketId, setExpandedTicketId] = useState(null);
+  const navigate = useNavigate();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -233,8 +234,8 @@ const TicketsPage = () => {
             <p className="empty-msg">You haven't reported any issues yet.</p>
           ) : (
             tickets.map(ticket => (
-              <div key={ticket.id} className={`ticket-card ${ticket.status}`}>
-                <div className="ticket-summary" onClick={() => setExpandedTicketId(expandedTicketId === ticket.id ? null : ticket.id)}>
+              <div key={ticket.id} className={`ticket-card ${ticket.status}`} onClick={() => navigate(`/tickets/${ticket.id}`)} style={{cursor: 'pointer'}}>
+                <div className="ticket-summary">
                   <div className="ticket-info">
                     <h4>{ticket.category.replace('_', ' ')}: {ticket.location}</h4>
                     <div className="ticket-meta">
@@ -248,64 +249,6 @@ const TicketsPage = () => {
                   </div>
                 </div>
 
-                {expandedTicketId === ticket.id && (
-                  <div className="ticket-detail">
-                    <div className="detail-content">
-                      <p><strong>Description:</strong> {ticket.description}</p>
-                      {ticket.contactDetails && <p><strong>Contact:</strong> {ticket.contactDetails}</p>}
-                      
-                      {ticket.attachmentPaths?.length > 0 && (
-                        <div className="attachments-section">
-                          {ticket.attachmentPaths.map((path, i) => (
-                            <img 
-                              key={i} 
-                              src={`http://localhost:8080${path}`} 
-                              alt="Attachment" 
-                              className="attachment-thumb"
-                              onClick={() => window.open(`http://localhost:8080${path}`, '_blank')}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {ticket.resolutionNotes && (
-                        <div className="resolution-panel" style={{marginTop: '15px', padding: '10px', background: '#ecfdf5', borderRadius: '8px', color: '#065f46'}}>
-                          <strong>✅ Resolution Notes:</strong> {ticket.resolutionNotes}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="comments-section">
-                      <h5>Updates & Comments</h5>
-                      {ticket.comments?.map(comment => (
-                        <div key={comment.id} className="comment-item">
-                          <div className="comment-avatar">{comment.userName.charAt(0).toUpperCase()}</div>
-                          <div className="comment-bubble">
-                            <div className="comment-author">
-                              {comment.userName} 
-                              <span className="comment-time">{new Date(comment.createdAt).toLocaleString()}</span>
-                            </div>
-                            <div className="comment-text">{comment.content}</div>
-                          </div>
-                        </div>
-                      ))}
-
-                      <div className="add-comment">
-                        <input 
-                          type="text" 
-                          placeholder="Add a comment..." 
-                          className="form-input"
-                          value={commentText[ticket.id] || ''}
-                          onChange={(e) => setCommentText(prev => ({ ...prev, [ticket.id]: e.target.value }))}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddComment(ticket.id)}
-                        />
-                        <button className="sidebar-link active" style={{border: 'none', padding: '8px 16px', borderRadius: '8px'}} onClick={() => handleAddComment(ticket.id)}>
-                          Send
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             ))
           )}

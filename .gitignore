@@ -37,4 +37,7 @@ build/
 # ===============================
 .env
 .env.*
-application.properties
+application.properties 
+# Logs and Scratch
+backend_log.txt
+scratch/

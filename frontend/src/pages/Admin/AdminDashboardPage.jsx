@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import Button from '../../components/ui/Button/Button';
 import ticketService from '../../services/ticketService';
@@ -9,6 +10,7 @@ const AdminDashboardPage = () => {
   const [filteredTickets, setFilteredTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const navigate = useNavigate();
   const [updateData, setUpdateData] = useState({
     status: '',
     resolutionNotes: '',
@@ -178,7 +180,7 @@ const AdminDashboardPage = () => {
               </thead>
               <tbody>
                 {filteredTickets.map(ticket => (
-                  <tr key={ticket.id}>
+                  <tr key={ticket.id} onClick={() => navigate(`/tickets/${ticket.id}`)} style={{cursor: 'pointer'}}>
                     <td>
                       <div className="ticket-subject">
                         <span className="ticket-title">{ticket.location}</span>
@@ -191,7 +193,7 @@ const AdminDashboardPage = () => {
                     <td>{renderStatusBadge(ticket.status)}</td>
                     <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
                     <td>
-                      <button className="action-btn btn-manage" onClick={() => handleManageClick(ticket)}>
+                      <button className="action-btn btn-manage" onClick={(e) => { e.stopPropagation(); handleManageClick(ticket); }}>
                         Manage
                       </button>
                     </td>
@@ -256,7 +258,7 @@ const AdminDashboardPage = () => {
                   {selectedTicket.comments?.length === 0 ? (
                     <p style={{fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic'}}>No comments yet.</p>
                   ) : (
-                    <div className="comments-list" style={{display: 'flex', flex-direction: 'column', gap: '12px'}}>
+                    <div className="comments-list" style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                       {selectedTicket.comments.map(comment => (
                         <div key={comment.id} className="comment-item" style={{display: 'flex', gap: '12px', background: '#f8fafc', padding: '10px', borderRadius: '8px'}}>
                           <div className="comment-avatar" style={{width: '28px', height: '28px', fontSize: '0.7rem'}}>{comment.userName.charAt(0).toUpperCase()}</div>

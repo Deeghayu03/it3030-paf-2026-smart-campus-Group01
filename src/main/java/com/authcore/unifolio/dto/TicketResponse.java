@@ -11,6 +11,7 @@ public class TicketResponse {
     private String reportedByEmail;
     private String reportedByName;
     private String assignedToEmail;
+    private String assignedToName;
     private String location;
     private Ticket.TicketCategory category;
     private String description;
@@ -21,6 +22,7 @@ public class TicketResponse {
     private String rejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime slaDeadline;
     private List<CommentResponse> comments;
     private List<String> attachmentPaths;
 }

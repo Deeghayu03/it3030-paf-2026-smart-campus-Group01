@@ -24,15 +24,38 @@ export const ticketService = {
   deleteAttachment: (attachId) => {
     return axiosInstance.delete(`/tickets/attachments/${attachId}`);
   },
-  addComment: (ticketId, content) => {
-    return axiosInstance.post(`/tickets/${ticketId}/comments`, { content });
+  // -- Detail & History Methods --
+  getTicketById: async (id) => {
+    const response = await axiosInstance.get(`/tickets/${id}`);
+    return response.data;
   },
-  deleteComment: (commentId) => {
-    return axiosInstance.delete(`/comments/${commentId}`);
+  getTicketHistory: async (id) => {
+    const response = await axiosInstance.get(`/tickets/${id}/history`);
+    return response.data;
   },
+  
+  // -- Comment Management --
+  addComment: async (ticketId, commentData) => {
+    const response = await axiosInstance.post(`/tickets/${ticketId}/comments`, commentData);
+    return response.data;
+  },
+  updateComment: async (ticketId, commentId, commentData) => {
+    const response = await axiosInstance.put(`/tickets/${ticketId}/comments/${commentId}`, commentData);
+    return response.data;
+  },
+  deleteComment: async (ticketId, commentId) => {
+    await axiosInstance.delete(`/tickets/${ticketId}/comments/${commentId}`);
+  },
+
   getAllTickets: () => {
     return axiosInstance.get('/tickets');
-  }
+  },
+
+  // -- Analytics --
+  getStats: async () => {
+    const response = await axiosInstance.get('/tickets/stats');
+    return response.data;
+  },
 };
 
 export default ticketService;

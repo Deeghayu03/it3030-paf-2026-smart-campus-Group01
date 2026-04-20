@@ -15,6 +15,7 @@ import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
 import OAuth2CallbackPage from './pages/Auth/OAuth2CallbackPage';
 import TicketDetailPage from './pages/Tickets/TicketDetailPage';
 import KanbanBoard from './pages/KanbanBoard/KanbanBoard';
+import AnalyticsDashboard from './pages/AnalyticsDashboard/AnalyticsDashboard';
 import useAuth from './hooks/useAuth';
 
 import { Navigate } from 'react-router-dom';
@@ -45,6 +46,7 @@ const App = () => {
         <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path={ROUTES.ADMIN} element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
         <Route path={ROUTES.KANBAN} element={<ProtectedRoute><KanbanBoard currentUser={currentUser} /></ProtectedRoute>} />
+        <Route path={ROUTES.ANALYTICS} element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

@@ -3,6 +3,7 @@ package com.authcore.unifolio.service;
 import com.authcore.unifolio.dto.*;
 import com.authcore.unifolio.entity.*;
 import com.authcore.unifolio.repo.*;
+import com.authcore.unifolio.exception.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,13 +40,27 @@ public class TicketService {
     @Autowired
     private StudentRepository studentRepository;
 
+    @Autowired
+    private TicketHistoryRepository historyRepository;
+
     @Value("${app.upload.dir:uploads/ticket-attachments}")
     private String uploadDir;
 
     @Transactional
     public TicketResponse createTicket(TicketRequest request, String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
+
+        // ─── Duplicate Ticket Check ───
+        if (request.getResourceId() != null) {
+            List<Ticket> existing = ticketRepository.findByReportedByEmailOrderByCreatedAtDesc(email);
+            existing.stream()
+                    .filter(t -> t.getResource() != null && t.getResource().getId().equals(request.getResourceId()) 
+                                && t.getCategory() == request.getCategory()
+                                && (t.getStatus() == Ticket.TicketStatus.OPEN || t.getStatus() == Ticket.TicketStatus.IN_PROGRESS))
+                    .findFirst()
+                    .ifPresent(t -> { throw new DuplicateTicketException(t.getId()); });
+        }
 
         Ticket ticket = new Ticket();
         ticket.setReportedBy(user);
@@ -62,6 +77,10 @@ public class TicketService {
         }
 
         Ticket savedTicket = ticketRepository.save(ticket);
+        
+        // Log initial creation
+        logHistory(savedTicket, null, Ticket.TicketStatus.OPEN, user, "Ticket created");
+        
         return mapToResponse(savedTicket);
     }
 
@@ -81,11 +100,7 @@ public class TicketService {
 
     public TicketResponse getTicketDetail(Long id, String email) {
         Ticket ticket = ticketRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
-
-        // Check ownership or role inside the service or controller? 
-        // Plan says: "Only the ticket owner or ADMIN/TECHNICIAN can update status"
-        // Let's assume view access is similar for simplicity or unrestricted for now but status update is guarded.
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", id));
 
         return mapToResponse(ticket);
     }
@@ -93,15 +108,21 @@ public class TicketService {
     @Transactional
     public TicketResponse updateStatus(Long id, StatusUpdateRequest request, String email) {
         Ticket ticket = ticketRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", id));
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
 
         if (user.getRole() != User.Role.ADMIN && user.getRole() != User.Role.TECHNICIAN) {
-            throw new RuntimeException("Unauthorized to update status");
+            throw new AccessDeniedException("Only Admins or Technicians can update ticket status");
         }
 
+        // ─── Status Workflow Validation ───
+        if (!ticket.getStatus().canTransitionTo(request.getStatus())) {
+            throw new InvalidStatusTransitionException(ticket.getStatus(), request.getStatus());
+        }
+
+        Ticket.TicketStatus oldStatus = ticket.getStatus();
         ticket.setStatus(request.getStatus());
         if (request.getResolutionNotes() != null) {
             ticket.setResolutionNotes(request.getResolutionNotes());
@@ -111,21 +132,28 @@ public class TicketService {
         }
         ticket.setAssignedTo(user);
 
-        return mapToResponse(ticketRepository.save(ticket));
+        Ticket updatedTicket = ticketRepository.save(ticket);
+        
+        // Log status change
+        String notes = request.getStatus() == Ticket.TicketStatus.RESOLVED ? request.getResolutionNotes() 
+                     : request.getStatus() == Ticket.TicketStatus.REJECTED ? request.getRejectionReason() : null;
+        logHistory(updatedTicket, oldStatus, request.getStatus(), user, notes);
+
+        return mapToResponse(updatedTicket);
     }
 
     @Transactional
     public List<String> uploadAttachments(Long ticketId, MultipartFile[] files, String email) throws IOException {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         if (!ticket.getReportedBy().getEmail().equals(email)) {
-            throw new RuntimeException("Unauthorized");
+            throw new AccessDeniedException("You can only upload attachments to your own tickets");
         }
 
         long existingCount = attachmentRepository.countByTicketId(ticketId);
         if (existingCount + files.length > 3) {
-            throw new RuntimeException("Maximum 3 attachments allowed per ticket");
+            throw new AttachmentLimitExceededException();
         }
 
         Path uploadPath = Paths.get(uploadDir);
@@ -136,7 +164,7 @@ public class TicketService {
         for (MultipartFile file : files) {
             String contentType = file.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
-                throw new RuntimeException("Only image files are allowed");
+                throw new InvalidFileTypeException(contentType);
             }
 
             String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
@@ -159,13 +187,13 @@ public class TicketService {
     @Transactional
     public void deleteAttachment(Long attachmentId, String email) {
         TicketAttachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new RuntimeException("Attachment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment", attachmentId));
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
 
         if (!attachment.getTicket().getReportedBy().getEmail().equals(email) && user.getRole() != User.Role.ADMIN) {
-            throw new RuntimeException("Unauthorized");
+            throw new AccessDeniedException("Unauthorized to delete this attachment");
         }
 
         // Note: Real implementation should also delete file from disk.
@@ -176,10 +204,10 @@ public class TicketService {
     @Transactional
     public CommentResponse addComment(Long ticketId, CommentRequest request, String email) {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
 
         Comment comment = new Comment();
         comment.setTicket(ticket);
@@ -192,16 +220,56 @@ public class TicketService {
     @Transactional
     public void deleteComment(Long commentId, String email) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
 
         if (!comment.getUser().getEmail().equals(email) && user.getRole() != User.Role.ADMIN) {
-            throw new RuntimeException("Unauthorized");
+            throw new AccessDeniedException("Unauthorized to delete this comment");
         }
 
         commentRepository.delete(comment);
+    }
+
+    @Transactional
+    public CommentResponse updateComment(Long commentId, CommentRequest request, String email) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
+
+        if (!comment.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException("You can only edit your own comments");
+        }
+
+        comment.setContent(request.getContent() + " (edited)");
+        return mapToCommentResponse(commentRepository.save(comment));
+    }
+
+    public List<TicketHistoryResponse> getTicketHistory(Long ticketId) {
+        return historyRepository.findByTicketIdOrderByCreatedAtAsc(ticketId)
+                .stream()
+                .map(h -> {
+                    TicketHistoryResponse res = new TicketHistoryResponse();
+                    res.setId(h.getId());
+                    res.setFromStatus(h.getFromStatus());
+                    res.setToStatus(h.getToStatus());
+                    res.setActorName(getUserDisplayName(h.getActor()));
+                    res.setActorRole(h.getActor().getRole().name());
+                    res.setNotes(h.getNotes());
+                    res.setCreatedAt(h.getCreatedAt());
+                    return res;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private void logHistory(Ticket ticket, Ticket.TicketStatus from, Ticket.TicketStatus to, User actor, String notes) {
+        TicketHistory history = new TicketHistory();
+        history.setTicket(ticket);
+        history.setFromStatus(from);
+        history.setToStatus(to);
+        history.setActor(actor);
+        history.setNotes(notes);
+        historyRepository.save(history);
     }
 
     private TicketResponse mapToResponse(Ticket ticket) {
@@ -225,6 +293,7 @@ public class TicketService {
         response.setRejectionReason(ticket.getRejectionReason());
         response.setCreatedAt(ticket.getCreatedAt());
         response.setUpdatedAt(ticket.getUpdatedAt());
+        response.setSlaDeadline(ticket.getSlaDeadline());
 
         List<Comment> comments = commentRepository.findByTicketIdOrderByCreatedAtAsc(ticket.getId());
         response.setComments(comments.stream().map(this::mapToCommentResponse).collect(Collectors.toList()));

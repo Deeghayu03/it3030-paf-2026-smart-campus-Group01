@@ -2,6 +2,7 @@ package com.authcore.unifolio.controller;
 
 import com.authcore.unifolio.dto.*;
 import com.authcore.unifolio.service.TicketService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class TicketController {
 
     @PostMapping("/tickets")
     public ResponseEntity<TicketResponse> createTicket(
-            @RequestBody TicketRequest request,
+            @Valid @RequestBody TicketRequest request,
             Authentication authentication) {
         return new ResponseEntity<>(ticketService.createTicket(request, authentication.getName()), HttpStatus.CREATED);
     }
@@ -42,7 +43,7 @@ public class TicketController {
     @PutMapping("/tickets/{id}/status")
     public ResponseEntity<TicketResponse> updateStatus(
             @PathVariable Long id,
-            @RequestBody StatusUpdateRequest request,
+            @Valid @RequestBody StatusUpdateRequest request,
             Authentication authentication) {
         return ResponseEntity.ok(ticketService.updateStatus(id, request, authentication.getName()));
     }
@@ -66,7 +67,7 @@ public class TicketController {
     @PostMapping("/tickets/{id}/comments")
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable Long id,
-            @RequestBody CommentRequest request,
+            @Valid @RequestBody CommentRequest request,
             Authentication authentication) {
         return ResponseEntity.ok(ticketService.addComment(id, request, authentication.getName()));
     }
@@ -77,6 +78,30 @@ public class TicketController {
             Authentication authentication) {
         ticketService.deleteComment(id, authentication.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/tickets/{ticketId}/comments/{commentId}")
+    public ResponseEntity<CommentResponse> updateComment(
+            @PathVariable Long ticketId,
+            @PathVariable Long commentId,
+            @Valid @RequestBody CommentRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(ticketService.updateComment(commentId, request, authentication.getName()));
+    }
+
+    @DeleteMapping("/tickets/{ticketId}/comments/{commentId}")
+    public ResponseEntity<Void> deleteCommentFromTicket(
+            @PathVariable Long ticketId,
+            @PathVariable Long commentId,
+            Authentication authentication) {
+        ticketService.deleteComment(commentId, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/tickets/{id}/history")
+    public ResponseEntity<List<TicketHistoryResponse>> getTicketHistory(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(ticketService.getTicketHistory(id));
     }
 
     @GetMapping("/tickets")
