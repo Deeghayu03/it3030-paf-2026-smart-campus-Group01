@@ -19,6 +19,44 @@ public class ResourceService {
         return resourceRepository.findAll();
     }
 
+    public List<Resource> getFilteredResources(Resource.ResourceType type, String location, Integer minCapacity) {
+        boolean hasType = type != null;
+        boolean hasLocation = location != null && !location.trim().isEmpty();
+        boolean hasMinCapacity = minCapacity != null;
+
+        if (hasType && hasLocation && hasMinCapacity) {
+            return resourceRepository.findByTypeAndLocationContainingIgnoreCaseAndCapacityGreaterThanEqual(
+                    type, location, minCapacity
+            );
+        }
+
+        if (hasType && hasLocation) {
+            return resourceRepository.findByTypeAndLocationContainingIgnoreCase(type, location);
+        }
+
+        if (hasType && hasMinCapacity) {
+            return resourceRepository.findByTypeAndCapacityGreaterThanEqual(type, minCapacity);
+        }
+
+        if (hasLocation && hasMinCapacity) {
+            return resourceRepository.findByLocationContainingIgnoreCaseAndCapacityGreaterThanEqual(location, minCapacity);
+        }
+
+        if (hasType) {
+            return resourceRepository.findByType(type);
+        }
+
+        if (hasLocation) {
+            return resourceRepository.findByLocationContainingIgnoreCase(location);
+        }
+
+        if (hasMinCapacity) {
+            return resourceRepository.findByCapacityGreaterThanEqual(minCapacity);
+        }
+
+        return resourceRepository.findAll();
+    }
+
     public Resource getResourceById(Long id) {
         return resourceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Resource not found with id: " + id));
@@ -42,10 +80,10 @@ public class ResourceService {
 
         validateResource(updatedResource);
 
-        existingResource.setName(updatedResource.getName());
+        existingResource.setName(updatedResource.getName().trim());
         existingResource.setType(updatedResource.getType());
         existingResource.setCapacity(updatedResource.getCapacity());
-        existingResource.setLocation(updatedResource.getLocation());
+        existingResource.setLocation(updatedResource.getLocation().trim());
         existingResource.setAvailableFrom(updatedResource.getAvailableFrom());
         existingResource.setAvailableTo(updatedResource.getAvailableTo());
         existingResource.setStatus(updatedResource.getStatus());
@@ -54,46 +92,15 @@ public class ResourceService {
         return resourceRepository.save(existingResource);
     }
 
+    public Resource updateResourceStatus(Long id, Resource.ResourceStatus status) {
+        Resource resource = getResourceById(id);
+        resource.setStatus(status);
+        return resourceRepository.save(resource);
+    }
+
     public void deleteResource(Long id) {
         Resource existingResource = getResourceById(id);
         resourceRepository.delete(existingResource);
-    }
-    public List<Resource> getFilteredResources(Resource.ResourceType type, String location, Integer minCapacity) {
-        boolean hasType = type != null;
-        boolean hasLocation = location != null && !location.trim().isEmpty();
-        boolean hasMinCapacity = minCapacity != null;
-
-        if (hasType && hasLocation && hasMinCapacity) {
-            return resourceRepository.findAll().stream()
-                    .filter(resource -> resource.getType() == type)
-                    .filter(resource -> resource.getLocation() != null &&
-                            resource.getLocation().toLowerCase().contains(location.toLowerCase()))
-                    .filter(resource -> resource.getCapacity() != null &&
-                            resource.getCapacity() >= minCapacity)
-                    .toList();
-        }
-
-        if (hasType && hasLocation) {
-            return resourceRepository.findByTypeAndLocationContainingIgnoreCase(type, location);
-        }
-
-        if (hasType && hasMinCapacity) {
-            return resourceRepository.findByTypeAndCapacityGreaterThanEqual(type, minCapacity);
-        }
-
-        if (hasType) {
-            return resourceRepository.findByType(type);
-        }
-
-        if (hasLocation) {
-            return resourceRepository.findByLocationContainingIgnoreCase(location);
-        }
-
-        if (hasMinCapacity) {
-            return resourceRepository.findByCapacityGreaterThanEqual(minCapacity);
-        }
-
-        return resourceRepository.findAll();
     }
 
     private void validateResource(Resource resource) {
@@ -106,7 +113,7 @@ public class ResourceService {
         }
 
         if (resource.getLocation() == null || resource.getLocation().trim().isEmpty()) {
-            throw new RuntimeException("Location is required");
+            throw new RuntimeException("Resource location is required");
         }
 
         if (resource.getAvailableFrom() == null) {
@@ -117,12 +124,8 @@ public class ResourceService {
             throw new RuntimeException("Available to time is required");
         }
 
-        if (resource.getAvailableFrom().compareTo(resource.getAvailableTo()) >= 0) {
+        if (!resource.getAvailableFrom().isBefore(resource.getAvailableTo())) {
             throw new RuntimeException("Available from time must be earlier than available to time");
-        }
-
-        if (resource.getStatus() == null) {
-            throw new RuntimeException("Resource status is required");
         }
 
         boolean isSpaceResource =
@@ -132,11 +135,13 @@ public class ResourceService {
 
         if (isSpaceResource) {
             if (resource.getCapacity() == null || resource.getCapacity() < 1) {
-                throw new RuntimeException("Capacity must be at least 1 for halls, labs, and meeting rooms");
+                throw new RuntimeException("Capacity must be at least 1 for lecture halls, labs, and meeting rooms");
             }
-        } else if (resource.getType() == Resource.ResourceType.EQUIPMENT) {
+        }
+
+        if (resource.getType() == Resource.ResourceType.EQUIPMENT) {
             if (resource.getCapacity() != null && resource.getCapacity() < 1) {
-                throw new RuntimeException("If provided, equipment capacity must be at least 1");
+                throw new RuntimeException("Equipment capacity must be at least 1 if provided");
             }
         }
     }

@@ -27,7 +27,8 @@ public class ResourceController {
             @RequestParam(required = false) String location,
             @RequestParam(required = false) Integer minCapacity
     ) {
-        return ResponseEntity.ok(resourceService.getFilteredResources(type, location, minCapacity));
+        List<Resource> resources = resourceService.getFilteredResources(type, location, minCapacity);
+        return ResponseEntity.ok(resources);
     }
 
     @GetMapping("/{id}")
@@ -38,12 +39,22 @@ public class ResourceController {
     @PostMapping
     public ResponseEntity<Resource> createResource(@RequestBody Resource resource) {
         Resource createdResource = resourceService.createResource(resource);
-        return new ResponseEntity<>(createdResource, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdResource);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Resource> updateResource(@PathVariable Long id, @RequestBody Resource resource) {
-        return ResponseEntity.ok(resourceService.updateResource(id, resource));
+        Resource updatedResource = resourceService.updateResource(id, resource);
+        return ResponseEntity.ok(updatedResource);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Resource> updateResourceStatus(
+            @PathVariable Long id,
+            @RequestParam Resource.ResourceStatus status
+    ) {
+        Resource updatedResource = resourceService.updateResourceStatus(id, status);
+        return ResponseEntity.ok(updatedResource);
     }
 
     @DeleteMapping("/{id}")
