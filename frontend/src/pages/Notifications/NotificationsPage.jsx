@@ -6,7 +6,7 @@ const NotificationsPage = () => {
   return (
     <DashboardLayout title="Notifications">
       <div className="coming-soon-card">
-        <div className="coming-soon-icon">N</div>
+        <div className="coming-soon-icon">🔔</div>
         <h2>Notifications</h2>
         <p>This module is currently under development. Here you will receive important updates and alerts.</p>
       </div>
