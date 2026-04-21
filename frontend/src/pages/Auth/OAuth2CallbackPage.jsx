@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
+import { ROUTES } from '../../constants/routes';
 import './OAuth2CallbackPage.css';
 
 const OAuth2CallbackPage = () => {
@@ -16,25 +17,27 @@ const OAuth2CallbackPage = () => {
       const name = params.get('name');
 
       if (token && role && email && name) {
-        // Store in localStorage (5 keys rule)
+        const decodedName = decodeURIComponent(name);
+        const upperRole = role.toUpperCase();
+
         localStorage.setItem('token', token);
         localStorage.setItem('role', role);
         localStorage.setItem('email', email);
-        localStorage.setItem('name', decodeURIComponent(name));
+        localStorage.setItem('name', decodedName);
         localStorage.setItem('isAuthenticated', 'true');
 
-        // Update auth context
-        login({ email, role, name: decodeURIComponent(name) }, token);
+        login({ email, role, name: decodedName }, token);
 
-        // Redirect based on role
-        if (role === 'ADMIN') {
-          navigate('/admin/dashboard');
+        if (upperRole.includes('ADMIN')) {
+          navigate(ROUTES.ADMIN_DASHBOARD);
+        } else if (upperRole.includes('TECHNICIAN')) {
+          navigate(ROUTES.TECHNICIAN_DASHBOARD);
         } else {
-          navigate('/dashboard');
+          navigate(ROUTES.DASHBOARD);
         }
       } else {
         console.error('OAuth2 login failed: Missing parameters');
-        navigate('/login?error=oauth2_failed');
+        navigate(`${ROUTES.LOGIN}?error=oauth2_failed`);
       }
     };
 
@@ -42,13 +45,13 @@ const OAuth2CallbackPage = () => {
   }, [navigate, login]);
 
   return (
-    <div className="oauth2-callback-container">
-      <div className="oauth2-callback-content">
-        <div className="spinner"></div>
-        <h2>Signing you in with Google...</h2>
-        <p>Please wait a moment while we process your request.</p>
+      <div className="oauth2-callback-container">
+        <div className="oauth2-callback-content">
+          <div className="spinner"></div>
+          <h2>Signing you in with Google...</h2>
+          <p>Please wait a moment while we process your request.</p>
+        </div>
       </div>
-    </div>
   );
 };
 
