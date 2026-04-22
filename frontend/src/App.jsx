@@ -12,7 +12,9 @@ import BookingsPage from './pages/Bookings/BookingsPage';
 import TicketsPage from './pages/Tickets/TicketsPage';
 import NotificationsPage from './pages/Notifications/NotificationsPage';
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
+import ManageUsersPage from './pages/Admin/ManageUsersPage';
 import OAuth2CallbackPage from './pages/Auth/OAuth2CallbackPage';
+import CompleteProfilePage from './pages/Auth/CompleteProfilePage';
 
 import { Navigate } from 'react-router-dom';
 
@@ -31,6 +33,7 @@ const App = () => {
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
           <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
           <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
+          <Route path="/complete-profile" element={<CompleteProfilePage />} />
           
           {/* Protected Dashboard Routes */}
           <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -39,6 +42,7 @@ const App = () => {
           <Route path={ROUTES.TICKETS} element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
           <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path={ROUTES.ADMIN} element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+          <Route path={ROUTES.ADMIN_USERS} element={<ProtectedRoute><ManageUsersPage /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

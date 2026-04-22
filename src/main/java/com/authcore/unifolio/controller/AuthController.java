@@ -1,6 +1,7 @@
 package com.authcore.unifolio.controller;
 
 import com.authcore.unifolio.dto.AuthResponse;
+import com.authcore.unifolio.dto.CompleteProfileRequest;
 import com.authcore.unifolio.dto.LoginRequest;
 import com.authcore.unifolio.dto.RegisterRequest;
 import com.authcore.unifolio.service.AuthService;
@@ -8,11 +9,13 @@ import com.authcore.unifolio.repo.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"}, allowedHeaders = "*",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT})
 public class AuthController {
 
     private final AuthService authService;
@@ -54,4 +57,20 @@ public class AuthController {
         boolean exists = userRepository.existsByEmail(email);
         return ResponseEntity.ok(exists);
     }
-}
+
+    @PostMapping("/complete-profile")
+    public ResponseEntity<AuthResponse> completeProfile(
+            @RequestBody @Valid CompleteProfileRequest request,
+            Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            AuthResponse response = authService.completeProfile(email, request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            AuthResponse error = new AuthResponse();
+            error.setSuccess(false);
+            error.setMessage(e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        }
+    }
+}

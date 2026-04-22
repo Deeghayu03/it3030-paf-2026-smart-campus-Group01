@@ -1,45 +1,39 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import './OAuth2CallbackPage.css';
 
 const OAuth2CallbackPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [searchParams] = useSearchParams();
+  const processed = useRef(false);
 
   useEffect(() => {
-    const processOAuth2Login = () => {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
-      const role = params.get('role');
-      const email = params.get('email');
-      const name = params.get('name');
+    if (processed.current) return;
+    processed.current = true;
 
-      if (token && role && email && name) {
-        // Store in localStorage (5 keys rule)
-        localStorage.setItem('token', token);
-        localStorage.setItem('role', role);
-        localStorage.setItem('email', email);
-        localStorage.setItem('name', decodeURIComponent(name));
-        localStorage.setItem('isAuthenticated', 'true');
+    const token = searchParams.get('token');
+    const role = searchParams.get('role');
+    const email = searchParams.get('email');
+    const name = searchParams.get('name');
+    const newUser = searchParams.get('newUser');
 
-        // Update auth context
-        login({ email, role, name: decodeURIComponent(name) }, token);
+    if (token && role && email) {
+      login({ email, role, name: decodeURIComponent(name || '') }, token);
 
-        // Redirect based on role
-        if (role === 'ADMIN') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+      if (newUser === 'true') {
+        navigate('/complete-profile', { replace: true });
+      } else if (role === 'ADMIN') {
+        navigate('/admin/dashboard', { replace: true });
       } else {
-        console.error('OAuth2 login failed: Missing parameters');
-        navigate('/login?error=oauth2_failed');
+        navigate('/dashboard', { replace: true });
       }
-    };
-
-    processOAuth2Login();
-  }, [navigate, login]);
+    } else {
+      console.error('OAuth2 login failed: Missing parameters');
+      navigate('/login?error=oauth2_failed', { replace: true });
+    }
+  }, []);
 
   return (
     <div className="oauth2-callback-container">

@@ -1,1 +1,1 @@
-export const ROUTES = { HOME: '/', LOGIN: '/login', REGISTER: '/register', DASHBOARD: '/dashboard', RESOURCES: '/dashboard/resources', BOOKINGS: '/dashboard/bookings', TICKETS: '/dashboard/tickets', NOTIFICATIONS: '/dashboard/notifications', ADMIN: '/admin/dashboard' };
+export const ROUTES = { HOME: '/', LOGIN: '/login', REGISTER: '/register', DASHBOARD: '/dashboard', RESOURCES: '/dashboard/resources', BOOKINGS: '/dashboard/bookings', TICKETS: '/dashboard/tickets', NOTIFICATIONS: '/dashboard/notifications', ADMIN: '/admin/dashboard', ADMIN_USERS: '/admin/users' };

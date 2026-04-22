@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../constants/routes';
 import useAuth from '../../../hooks/useAuth';
+import NotificationBell from "../../common/NotificationBell/NotificationBell";
 import './DashboardLayout.css';
 
 const DashboardLayout = ({ title, notificationCount = 0, children }) => {
@@ -12,19 +13,25 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
   const studentName = localStorage.getItem('name') || 'Student';
   const studentEmail = localStorage.getItem('email') || '';
   const initial = studentName.charAt(0).toUpperCase();
+  const isAdmin = localStorage.getItem('role') === 'ADMIN';
 
   const handleLogout = () => {
     logout();
     navigate(ROUTES.LOGIN);
   };
 
-  const navItems = [
-    { path: ROUTES.DASHBOARD, label: 'Dashboard', icon: 'D', color: '#52B788' },
-    { path: ROUTES.RESOURCES, label: 'Resources', icon: 'R', color: '#4CAF50' },
-    { path: ROUTES.BOOKINGS, label: 'Bookings', icon: 'B', color: '#2196F3' },
-    { path: ROUTES.TICKETS, label: 'Maintenance', icon: 'M', color: '#FF9800' },
-    { path: ROUTES.NOTIFICATIONS, label: 'Notifications', icon: 'N', color: '#9C27B0' }
-  ];
+  const navItems = isAdmin
+    ? [
+        { path: ROUTES.ADMIN, label: 'Dashboard', icon: 'D', color: '#52B788' },
+        { path: ROUTES.ADMIN_USERS, label: 'Manage Users', icon: '👥', color: '#2D6A4F' },
+      ]
+    : [
+        { path: ROUTES.DASHBOARD, label: 'Dashboard', icon: 'D', color: '#52B788' },
+        { path: ROUTES.RESOURCES, label: 'Resources', icon: 'R', color: '#4CAF50' },
+        { path: ROUTES.BOOKINGS, label: 'Bookings', icon: 'B', color: '#2196F3' },
+        { path: ROUTES.TICKETS, label: 'Maintenance', icon: 'M', color: '#FF9800' },
+        { path: ROUTES.NOTIFICATIONS, label: 'Notifications', icon: 'N', color: '#9C27B0' },
+      ];
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -44,7 +51,7 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
               to={item.path} 
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
               onClick={closeMobileMenu}
-              end={item.path === ROUTES.DASHBOARD}
+              end={item.path === ROUTES.DASHBOARD || item.path === ROUTES.ADMIN || item.path === ROUTES.ADMIN_USERS}
             >
               <div className="icon-circle" style={{ backgroundColor: item.color }}>{item.icon}</div>
               <span className="sidebar-label">{item.label}</span>
@@ -85,8 +92,9 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
             <h1 className="page-title">{title}</h1>
           </div>
           
-          <div className="topbar-right">
+          <div className="navbar-right">
             <span className="student-portal-text">Student Portal</span>
+            <NotificationBell />
           </div>
         </header>
 

@@ -247,10 +247,10 @@
   margin: 0;
 }
 
-.topbar-right {
+.navbar-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .student-portal-text {
