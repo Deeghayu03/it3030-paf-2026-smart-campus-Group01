@@ -18,10 +18,10 @@ const DashboardPage = () => {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const data = await getResources();
+        const response = await getResources();
 
         setStats({
-          resources: data?.length || 0,
+          resources: response.data?.length || 0,
           myBookings: 3,
           pendingBookings: 1,
           tickets: 2,

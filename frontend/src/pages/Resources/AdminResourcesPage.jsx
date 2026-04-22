@@ -44,8 +44,8 @@ const AdminResourcesPage = () => {
         try {
             setLoading(true);
             setError('');
-            const data = await getResources();
-            setResources(data);
+            const response = await getResources();
+            setResources(response.data);
         } catch (error) {
             console.error('Failed to load resources:', error);
             setError('Failed to load resources. Please try again.');
@@ -173,7 +173,8 @@ const AdminResourcesPage = () => {
             };
 
             if (editingResourceId) {
-                const updatedResource = await updateResource(editingResourceId, payload);
+                const response = await updateResource(editingResourceId, payload);
+                const updatedResource = response.data;
 
                 setResources((prev) =>
                     prev.map((resource) =>
@@ -183,10 +184,11 @@ const AdminResourcesPage = () => {
 
                 setSuccessMessage('Resource updated successfully');
             } else {
-                const createdResource = await createResource({
+                const response = await createResource({
                     ...payload,
                     status: 'ACTIVE'
                 });
+                const createdResource = response.data;
 
                 setResources((prev) => [createdResource, ...prev]);
                 setSuccessMessage('Resource created successfully');

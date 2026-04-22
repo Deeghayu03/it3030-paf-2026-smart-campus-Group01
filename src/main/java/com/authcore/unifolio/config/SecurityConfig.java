@@ -2,6 +2,7 @@ package com.authcore.unifolio.config;
 
 import com.authcore.unifolio.security.CustomUserDetailsService;
 import com.authcore.unifolio.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,11 +52,21 @@ public class SecurityConfig {
                     "/login/oauth2/**",
                     "/oauth2/**"
                 ).permitAll()
+                .requestMatchers("/api/bookings/all").hasRole("ADMIN")
+                .requestMatchers("/api/bookings/my").authenticated()
+                .requestMatchers("/api/bookings/**").authenticated()
                 .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                 .requestMatchers("/api/technician/**")
                     .hasAnyRole("ADMIN", "TECHNICIAN")
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setContentType("application/json");
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                })
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(

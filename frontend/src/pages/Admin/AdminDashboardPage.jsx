@@ -18,11 +18,11 @@ const AdminDashboardPage = () => {
     useEffect(() => {
         const loadDashboardData = async () => {
             try {
-                const data = await getResources();
+                const response = await getResources();
 
                 setStats((prev) => ({
                     ...prev,
-                    resources: data?.length || 0,
+                    resources: response.data?.length || 0,
                     bookings: 12,
                     pending: 4,
                     tickets: 7,
