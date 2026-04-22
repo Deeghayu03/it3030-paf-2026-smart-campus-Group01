@@ -10,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+    long countByStatus(Booking.BookingStatus status);
     List<Booking> findByUserId(Long userId);
     List<Booking> findByUser(User user);
     List<Booking> findByResourceIdAndBookingDateAndStatusIn(Long resourceId, LocalDate bookingDate, List<Booking.BookingStatus> statuses);
