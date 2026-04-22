@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
+import { ROUTES } from '../../constants/routes';
 import './OAuth2CallbackPage.css';
 
 const OAuth2CallbackPage = () => {
@@ -25,13 +26,15 @@ const OAuth2CallbackPage = () => {
       if (newUser === 'true') {
         navigate('/complete-profile', { replace: true });
       } else if (role === 'ADMIN') {
-        navigate('/admin/dashboard', { replace: true });
+        navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      } else if (role === 'TECHNICIAN') {
+        navigate(ROUTES.TECHNICIAN_DASHBOARD, { replace: true });
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate(ROUTES.DASHBOARD, { replace: true });
       }
     } else {
       console.error('OAuth2 login failed: Missing parameters');
-      navigate('/login?error=oauth2_failed', { replace: true });
+      navigate(`${ROUTES.LOGIN}?error=oauth2_failed`, { replace: true });
     }
   }, []);
 

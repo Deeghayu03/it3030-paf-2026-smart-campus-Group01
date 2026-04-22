@@ -11,12 +11,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedRole = localStorage.getItem('role');
+    const storedUserId = localStorage.getItem('userId');
     const storedIsAuthenticated = localStorage.getItem('isAuthenticated');
 
     if (storedToken && storedIsAuthenticated === 'true') {
       setToken(storedToken);
       setRole(storedRole);
       setIsAuthenticated(true);
+      setUser({
+        id: storedUserId,
+        role: storedRole,
+        name: localStorage.getItem('name'),
+        email: localStorage.getItem('email')
+      });
     }
   }, []);
 
@@ -27,6 +34,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     localStorage.setItem('token', tokenString);
     localStorage.setItem('role', userData.role || '');
+    localStorage.setItem('userId', userData.id || '');
     localStorage.setItem('email', userData.email || '');
     localStorage.setItem('name', userData.name || '');
     localStorage.setItem('isAuthenticated', 'true');

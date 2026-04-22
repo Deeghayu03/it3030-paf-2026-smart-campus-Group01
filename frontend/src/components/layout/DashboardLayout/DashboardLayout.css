@@ -26,7 +26,7 @@
   width: 240px;
 }
 
-.sidebar-logo {
+.sidebar-brand {
   height: 64px;
   display: flex;
   align-items: center;
@@ -36,23 +36,26 @@
   font-weight: 800;
   font-size: 1.5rem;
   white-space: nowrap;
+  gap: 10px;
 }
 
-.logo-short {
-  display: inline-block;
-  min-width: 36px;
-  text-align: center;
-  color: white;
+.sidebar-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: white;
+  padding: 2px;
+  flex-shrink: 0;
 }
 
-.logo-full {
+.logo-text {
   opacity: 0;
-  margin-left: 12px;
   transition: opacity 0.3s ease;
   color: white;
 }
 
-.dashboard-sidebar:hover .logo-full {
+.dashboard-sidebar:hover .logo-text {
   opacity: 1;
 }
 
