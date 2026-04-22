@@ -37,3 +37,8 @@ build/
 # ===============================
 .env
 .env.*
+application.properties
+
+# Sensitive configuration files
+src/main/resources/application.properties
+src/main/resources/application-local.properties

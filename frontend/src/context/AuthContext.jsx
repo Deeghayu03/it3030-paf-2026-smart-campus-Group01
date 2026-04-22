@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 
 export const AuthContext = createContext();
 
@@ -27,20 +27,18 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (userData, tokenString) => {
+  const login = useCallback((userData, tokenString) => {
     setUser(userData);
     setToken(tokenString);
     setRole(userData.role || null);
     setIsAuthenticated(true);
-    
-    // Only these keys should be in localStorage
     localStorage.setItem('token', tokenString);
     localStorage.setItem('role', userData.role || '');
     localStorage.setItem('userId', userData.id || '');
     localStorage.setItem('email', userData.email || '');
     localStorage.setItem('name', userData.name || '');
     localStorage.setItem('isAuthenticated', 'true');
-  };
+  }, []);
 
   const logout = () => {
     setUser(null);

@@ -7,9 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -39,26 +38,20 @@ public class SecurityConfig {
     private com.authcore.unifolio.security.OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(
-                corsConfigurationSource()))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/public/**",
                     "/login/oauth2/**",
-                    "/oauth2/**"
+                    "/oauth2/**",
+                    "/login/**"
                 ).permitAll()
-                .requestMatchers("/api/bookings/all").hasRole("ADMIN")
-                .requestMatchers("/api/bookings/my").authenticated()
-                .requestMatchers("/api/bookings/**").authenticated()
-                .requestMatchers("/api/admin/**")
-                    .hasRole("ADMIN")
-                .requestMatchers("/api/technician/**")
-                    .hasAnyRole("ADMIN", "TECHNICIAN")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/technician/**").hasAnyRole("ADMIN", "TECHNICIAN")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions
@@ -69,31 +62,27 @@ public class SecurityConfig {
                 })
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(
-                    SessionCreationPolicy.STATELESS)
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             )
             .oauth2Login(oauth2 -> oauth2
                 .successHandler(oAuth2SuccessHandler)
+                .failureHandler((request, response, exception) -> {
+                    System.out.println("OAuth2 FAILURE: " + exception.getMessage());
+                    exception.printStackTrace();
+                    response.sendRedirect("http://localhost:5173/login?error=oauth2_failed");
+                })
             )
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter,
-                UsernamePasswordAuthenticationFilter.class);
+            .formLogin(form -> form.disable())
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = 
-            new DaoAuthenticationProvider();
+    public AuthenticationManager authenticationManager() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
-        return provider;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+        return new ProviderManager(provider);
     }
 
     @Bean
@@ -109,12 +98,12 @@ public class SecurityConfig {
             "http://localhost:5174"
         ));
         configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "PATCH", 
+            "GET", "POST", "PUT", "PATCH",
             "DELETE", "OPTIONS"
         ));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = 
+        UrlBasedCorsConfigurationSource source =
             new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
