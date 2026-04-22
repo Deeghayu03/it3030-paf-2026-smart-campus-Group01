@@ -50,6 +50,8 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
     }
   };
 
+  const selectedResource = resources.find(res => String(res.id) === String(formData.resourceId));
+
   const validate = () => {
     const newErrors = {};
     if (!formData.resourceId) newErrors.resourceId = 'Resource is required';
@@ -64,6 +66,15 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
       }
     }
 
+    if (selectedResource) {
+        if (selectedResource.availableFrom && formData.startTime < selectedResource.availableFrom) {
+            newErrors.startTime = `Must be after ${selectedResource.availableFrom}`;
+        }
+        if (selectedResource.availableTo && formData.endTime > selectedResource.availableTo) {
+            newErrors.endTime = `Must be before ${selectedResource.availableTo}`;
+        }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -73,6 +84,15 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
     if (validate()) {
       onSubmit(formData);
     }
+  };
+
+  const formatDisplayTime = (time) => {
+    if (!time) return '';
+    const [h, m] = time.split(':');
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const h12 = hour % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
   };
 
   return (
@@ -92,6 +112,14 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
           ))}
         </select>
         {errors.resourceId && <span className="error-text">{errors.resourceId}</span>}
+        
+        {selectedResource && (
+          <div className="availability-info">
+            <span className="availability-badge">
+                🕒 Available: {formatDisplayTime(selectedResource.availableFrom)} – {formatDisplayTime(selectedResource.availableTo)}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="form-group">
@@ -118,6 +146,8 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
             value={formData.startTime} 
             onChange={handleChange}
             className={errors.startTime ? 'error' : ''}
+            min={selectedResource?.availableFrom || "00:00"}
+            max={selectedResource?.availableTo || "23:59"}
           />
           {errors.startTime && <span className="error-text">{errors.startTime}</span>}
         </div>
@@ -131,6 +161,8 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
             value={formData.endTime} 
             onChange={handleChange}
             className={errors.endTime ? 'error' : ''}
+            min={selectedResource?.availableFrom || "00:00"}
+            max={selectedResource?.availableTo || "23:59"}
           />
           {errors.endTime && <span className="error-text">{errors.endTime}</span>}
         </div>

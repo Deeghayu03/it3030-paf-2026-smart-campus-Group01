@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ROUTES } from '../../../constants/routes';
 import Button from '../../ui/Button/Button';
+import logo from '../../../assets/logo.png';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -22,7 +23,8 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="container navbar-container">
         <Link to={ROUTES.HOME} className="navbar-logo">
-          UniFolio
+          <img src={logo} alt="UniFolio Logo" className="logo-icon-img" />
+          <span>UniFolio</span>
         </Link>
         
         <div className={`navbar-links ${isMobileMenuOpen ? 'active' : ''}`}>

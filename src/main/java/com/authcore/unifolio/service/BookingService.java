@@ -59,8 +59,16 @@ public class BookingService {
                     request.getBookingDate(),
                     List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.APPROVED)
             );
-            List<Map<String, String>> suggestions = generateSuggestions(existingBookings, request);
+            List<Map<String, String>> suggestions = generateSuggestions(existingBookings, request, resource);
             throw new ConflictException("Time slot already booked", suggestions);
+        }
+
+        // VALIDATE RESOURCE AVAILABILITY
+        if (resource.getAvailableFrom() != null && request.getStartTime().isBefore(resource.getAvailableFrom())) {
+            throw new IllegalArgumentException("Booking time must be within resource available hours: " + resource.getAvailableFrom() + " - " + resource.getAvailableTo());
+        }
+        if (resource.getAvailableTo() != null && request.getEndTime().isAfter(resource.getAvailableTo())) {
+            throw new IllegalArgumentException("Booking time must be within resource available hours: " + resource.getAvailableFrom() + " - " + resource.getAvailableTo());
         }
 
         Booking booking = new Booking();
@@ -136,24 +144,34 @@ public class BookingService {
         }
 
         // Use new resource ID if provided, otherwise use current
-        Long resourceId = request.getResourceId() != null ? request.getResourceId() : booking.getResource().getId();
+        Resource resourceToValidate = booking.getResource();
+        if (request.getResourceId() != null && !request.getResourceId().equals(booking.getResource().getId())) {
+            resourceToValidate = resourceRepository.findById(request.getResourceId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
+        }
 
         // Check for conflicts excluding the current booking
-        if (checkConflict(resourceId, request.getBookingDate(), request.getStartTime(), request.getEndTime(), booking.getId())) {
+        if (checkConflict(resourceToValidate.getId(), request.getBookingDate(), request.getStartTime(), request.getEndTime(), booking.getId())) {
             List<Booking> existingBookings = bookingRepository.findByResourceIdAndBookingDateAndStatusIn(
-                    resourceId,
+                    resourceToValidate.getId(),
                     request.getBookingDate(),
                     List.of(Booking.BookingStatus.PENDING, Booking.BookingStatus.APPROVED)
             );
-            List<Map<String, String>> suggestions = generateSuggestions(existingBookings, request);
+            List<Map<String, String>> suggestions = generateSuggestions(existingBookings, request, resourceToValidate);
             throw new ConflictException("Time slot already booked", suggestions);
+        }
+
+        // VALIDATE RESOURCE AVAILABILITY
+        if (resourceToValidate.getAvailableFrom() != null && request.getStartTime().isBefore(resourceToValidate.getAvailableFrom())) {
+            throw new IllegalArgumentException("Booking time must be within resource available hours: " + resourceToValidate.getAvailableFrom() + " - " + resourceToValidate.getAvailableTo());
+        }
+        if (resourceToValidate.getAvailableTo() != null && request.getEndTime().isAfter(resourceToValidate.getAvailableTo())) {
+            throw new IllegalArgumentException("Booking time must be within resource available hours: " + resourceToValidate.getAvailableFrom() + " - " + resourceToValidate.getAvailableTo());
         }
 
         // Update resource if changed
         if (request.getResourceId() != null && !request.getResourceId().equals(booking.getResource().getId())) {
-            Resource newResource = resourceRepository.findById(request.getResourceId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
-            booking.setResource(newResource);
+            booking.setResource(resourceToValidate);
         }
 
         booking.setBookingDate(request.getBookingDate());
@@ -228,9 +246,9 @@ public class BookingService {
     }
 
     // 5. FIX SUGGESTION LOGIC EDGE CASE
-    public List<Map<String, String>> generateSuggestions(List<Booking> existingBookings, BookingRequestDTO request) {
-        LocalTime workingStart = LocalTime.of(8, 0);
-        LocalTime workingEnd = LocalTime.of(18, 0);
+    public List<Map<String, String>> generateSuggestions(List<Booking> existingBookings, BookingRequestDTO request, Resource resource) {
+        LocalTime workingStart = resource.getAvailableFrom() != null ? resource.getAvailableFrom() : LocalTime.of(8, 0);
+        LocalTime workingEnd = resource.getAvailableTo() != null ? resource.getAvailableTo() : LocalTime.of(18, 0);
         long requestedDuration = Duration.between(request.getStartTime(), request.getEndTime()).toMinutes();
 
         if (requestedDuration <= 0) requestedDuration = 60; // Fallback

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../constants/routes';
 import useAuth from '../../../hooks/useAuth';
+import logo from '../../../assets/logo.png';
 import './DashboardLayout.css';
 
 const DashboardLayout = ({ title, notificationCount = 0, children }) => {
@@ -62,9 +63,9 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
   return (
       <div className="dashboard-wrapper">
         <aside className={`dashboard-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-          <div className="sidebar-logo">
-            <span className="logo-short">U</span>
-            <span className="logo-full">UniFolio</span>
+          <div className="sidebar-brand">
+            <img src={logo} alt="UniFolio Logo" className="sidebar-logo" />
+            <span className="logo-text">UniFolio</span>
           </div>
 
           <nav className="sidebar-nav">

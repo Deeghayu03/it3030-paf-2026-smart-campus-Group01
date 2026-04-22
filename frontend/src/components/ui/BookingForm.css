@@ -117,3 +117,20 @@
 .suggestion-pill:hover {
   background-color: #BBF7D0;
 }
+
+.availability-info {
+  margin-top: 4px;
+}
+
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #F3F4F6;
+  color: #374151;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid #E5E7EB;
+}
