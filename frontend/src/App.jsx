@@ -17,6 +17,7 @@ import OAuth2CallbackPage from './pages/Auth/OAuth2CallbackPage';
 import CompleteProfilePage from './pages/Auth/CompleteProfilePage';
 import AdminResourcesPage from './pages/Resources/AdminResourcesPage';
 import TechnicianDashboardPage from './pages/Technician/TechnicianDashboardPage';
+import TechnicianResourcesPage from './pages/Technician/TechnicianResourcesPage';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -50,11 +51,38 @@ const App = () => {
           <Route path={ROUTES.ADMIN_TICKETS} element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
           <Route path={ROUTES.ADMIN_NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
-          {/* Technician Routes */}
-          <Route path={ROUTES.TECHNICIAN_DASHBOARD} element={<ProtectedRoute><TechnicianDashboardPage /></ProtectedRoute>} />
-          <Route path={ROUTES.TECHNICIAN_TICKETS} element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
-          <Route path={ROUTES.TECHNICIAN_NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-          <Route path={ROUTES.TECHNICIAN_RESOURCES} element={<ProtectedRoute><ResourcesPage /></ProtectedRoute>} />
+            <Route
+                path={ROUTES.TECHNICIAN_DASHBOARD}
+                element={
+                  <ProtectedRoute>
+                    <TechnicianDashboardPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path={ROUTES.TECHNICIAN_TICKETS}
+                element={
+                  <ProtectedRoute>
+                    <TicketsPage />
+                  </ProtectedRoute>
+                }
+            />
+            <Route
+                path={ROUTES.TECHNICIAN_NOTIFICATIONS}
+                element={
+                  <ProtectedRoute>
+                    <NotificationsPage />
+                  </ProtectedRoute>
+                }
+            />
+              <Route
+                  path={ROUTES.TECHNICIAN_RESOURCES}
+                  element={
+                      <ProtectedRoute>
+                          <TechnicianResourcesPage />
+                      </ProtectedRoute>
+                  }
+              />
 
           <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
         </Routes>
