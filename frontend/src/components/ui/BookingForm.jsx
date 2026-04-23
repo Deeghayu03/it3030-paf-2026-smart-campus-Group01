@@ -23,16 +23,16 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
       try {
         console.log("API URL:", api.defaults.baseURL + "/resources");
         const response = await resourceService.getAllResources();
-        console.log("FULL RESPONSE:", response);
+        console.log("SUCCESS RESPONSE:", response);
         console.log("RESPONSE DATA:", response.data);
         
         const data = response.data?.data || response.data?.resources || response.data;
         const resourcesData = Array.isArray(data) ? data : [];
         setResources(resourcesData);
       } catch (error) {
-        console.log("ERROR STATUS:", error.response?.status);
-        console.log("ERROR DATA:", error.response?.data);
-        console.log("ERROR FULL:", error);
+
+console.log("ERROR STATUS:", error.response?.status);
+console.log("ERROR DATA:", error.response?.data);
       }
     };
     fetchResources();
@@ -98,7 +98,6 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
   };
 
 
-
   return (
     <form className="booking-form" onSubmit={handleSubmit}>
       <div className="form-group">
@@ -112,7 +111,9 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
         >
           <option value="">-- Select a resource --</option>
           {resources.map(res => (
-            <option key={res.id} value={res.id}>{res.name} ({res.location})</option>
+            <option key={res.id} value={res.id}>
+              {res.name || res.resourceName} ({res.location})
+            </option>
           ))}
         </select>
         {errors.resourceId && <span className="error-text">{errors.resourceId}</span>}

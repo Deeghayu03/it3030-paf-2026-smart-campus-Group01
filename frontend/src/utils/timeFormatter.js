@@ -1,17 +1,12 @@
-export const formatTime = (timeString) => {
-  if (!timeString) return "";
+export const formatTime = (timeStr) => {
+  if (!timeStr) return "";
 
-  const [hour, minute] = timeString.split(":");
+  const [hourStr, minuteStr] = timeStr.split(":");
+  let hour = parseInt(hourStr, 10);
+  const minute = minuteStr;
 
-  let h = parseInt(hour, 10);
-  const ampm = h >= 12 ? "PM" : "AM";
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
 
-  h = h % 12;
-  if (h === 0) h = 12;
-
-  return `${h}:${minute} ${ampm}`;
-};
-
-export const formatTimeRange = (start, end) => {
-  return `${formatTime(start)} – ${formatTime(end)}`;
+  return `${hour}.${minute} ${ampm}`;
 };

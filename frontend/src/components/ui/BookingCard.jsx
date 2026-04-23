@@ -1,10 +1,13 @@
 import React from 'react';
 import './BookingCard.css';
+import React, { useState } from 'react';
+import './BookingCard.css';
+
 import { formatTime, formatTimeRange } from '../../utils/timeFormatter';
 import { formatRole } from '../../utils/helpers';
+
 import BookingTimeline from '../booking/BookingTimeline';
 import { getBookingTimeline } from '../../services/bookingService';
-import { useState } from 'react';
 
 const BookingCard = ({ booking, onCancel, onEdit, onBookAgain, onApprove, onReject, currentUser }) => {
   const {
