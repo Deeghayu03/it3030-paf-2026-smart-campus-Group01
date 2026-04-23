@@ -1,6 +1,6 @@
 import React from 'react';
 import './AdminBookingItem.css';
-import { formatTime } from '../../utils/formatTime';
+import { formatTime } from '../../utils/timeFormatter';
 
 const AdminBookingItem = ({ booking, onApprove, onReject, onCancel }) => {
   const {

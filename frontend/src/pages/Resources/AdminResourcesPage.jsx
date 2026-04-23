@@ -6,6 +6,7 @@ import {
     createResource,
     updateResource
 } from '../../services/resourceService';
+import { formatTime } from '../../utils/timeFormatter';
 import '../Dashboard/DashboardPage.css';
 import './ResourcesPage.css';
 
@@ -45,9 +46,16 @@ const AdminResourcesPage = () => {
             setLoading(true);
             setError('');
             const response = await getResources();
-            setResources(response.data);
+            console.log("SUCCESS RESPONSE:", response);
+            console.log("RESPONSE DATA:", response.data);
+            
+            const data = response.data?.data || response.data?.resources || response.data;
+            const resourcesList = Array.isArray(data) ? data : [];
+            setResources(resourcesList);
         } catch (error) {
-            console.error('Failed to load resources:', error);
+            console.log("ERROR OBJECT:", error);
+            console.log("ERROR RESPONSE:", error.response);
+            console.log("ERROR DATA:", error.response?.data);
             setError('Failed to load resources. Please try again.');
         } finally {
             setLoading(false);
@@ -174,7 +182,7 @@ const AdminResourcesPage = () => {
 
             if (editingResourceId) {
                 const response = await updateResource(editingResourceId, payload);
-                const updatedResource = response.data;
+                const updatedResource = response.data?.data || response.data?.resource || response.data;
 
                 setResources((prev) =>
                     prev.map((resource) =>
@@ -188,7 +196,7 @@ const AdminResourcesPage = () => {
                     ...payload,
                     status: 'ACTIVE'
                 });
-                const createdResource = response.data;
+                const createdResource = response.data?.data || response.data?.resource || response.data;
 
                 setResources((prev) => [createdResource, ...prev]);
                 setSuccessMessage('Resource created successfully');
@@ -441,12 +449,12 @@ const AdminResourcesPage = () => {
                                     <tbody>
                                     {filteredResources.map((resource) => (
                                         <tr key={resource.id}>
-                                            <td data-label="Name">{resource.name}</td>
+                                            <td data-label="Name">{resource.name || resource.resourceName}</td>
                                             <td data-label="Type">{formatType(resource.type)}</td>
                                             <td data-label="Location">{resource.location}</td>
                                             <td data-label="Capacity">{resource.capacity ?? '—'}</td>
                                             <td data-label="Available">
-                                                {resource.availableFrom} – {resource.availableTo}
+                                                {formatTime(resource.availableFrom)} – {formatTime(resource.availableTo)}
                                             </td>
                                             <td data-label="Status">
                                                     <span className={`status-badge ${resource.status?.toLowerCase()}`}>

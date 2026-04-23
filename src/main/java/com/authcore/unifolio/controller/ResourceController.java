@@ -12,7 +12,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/resources")
-@CrossOrigin(origins = "*")
 public class ResourceController {
 
     private final ResourceService resourceService;
@@ -28,6 +27,7 @@ public class ResourceController {
             @RequestParam(required = false) Integer minCapacity
     ) {
         List<Resource> resources = resourceService.getFilteredResources(type, location, minCapacity);
+        System.out.println("Resources count from DB: " + resources.size());
         return ResponseEntity.ok(resources);
     }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './BookingForm.css';
 import Button from './Button/Button';
 import resourceService from '../../services/resourceService';
+import { formatTime } from '../../utils/timeFormatter';
 
 const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestions = null, onSelectSuggestion = null }) => {
   const [formData, setFormData] = useState({
@@ -20,9 +21,16 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
     const fetchResources = async () => {
       try {
         const response = await resourceService.getAllResources();
-        setResources(response.data);
-      } catch (err) {
-        console.error('Error fetching resources:', err);
+        console.log("SUCCESS RESPONSE:", response);
+        console.log("RESPONSE DATA:", response.data);
+        
+        const data = response.data?.data || response.data?.resources || response.data;
+        const resourcesData = Array.isArray(data) ? data : [];
+        setResources(resourcesData);
+      } catch (error) {
+        console.log("ERROR OBJECT:", error);
+        console.log("ERROR RESPONSE:", error.response);
+        console.log("ERROR DATA:", error.response?.data);
       }
     };
     fetchResources();
@@ -86,14 +94,6 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
     }
   };
 
-  const formatDisplayTime = (time) => {
-    if (!time) return '';
-    const [h, m] = time.split(':');
-    const hour = parseInt(h);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const h12 = hour % 12 || 12;
-    return `${h12}:${m} ${ampm}`;
-  };
 
   return (
     <form className="booking-form" onSubmit={handleSubmit}>
@@ -108,7 +108,9 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
         >
           <option value="">-- Select a resource --</option>
           {resources.map(res => (
-            <option key={res.id} value={res.id}>{res.name} ({res.location})</option>
+            <option key={res.id} value={res.id}>
+              {res.name || res.resourceName} ({res.location})
+            </option>
           ))}
         </select>
         {errors.resourceId && <span className="error-text">{errors.resourceId}</span>}
@@ -116,7 +118,7 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
         {selectedResource && (
           <div className="availability-info">
             <span className="availability-badge">
-                🕒 Available: {formatDisplayTime(selectedResource.availableFrom)} – {formatDisplayTime(selectedResource.availableTo)}
+                🕒 Available: {formatTime(selectedResource.availableFrom)} – {formatTime(selectedResource.availableTo)}
             </span>
           </div>
         )}
@@ -208,7 +210,7 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
                 onClick={() => onSelectSuggestion(slot)}
                 className="suggestion-pill"
               >
-                {slot.startTime} - {slot.endTime}
+                {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
               </button>
             ))}
           </div>

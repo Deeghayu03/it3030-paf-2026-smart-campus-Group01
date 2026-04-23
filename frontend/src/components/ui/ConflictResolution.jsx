@@ -1,6 +1,6 @@
 import React from 'react';
 import './ConflictResolution.css';
-import { formatTime } from '../../utils/formatTime';
+import { formatTime } from '../../utils/timeFormatter';
 
 const ConflictResolution = ({ suggestions, onSelect }) => {
   if (!suggestions || suggestions.length === 0) return null;

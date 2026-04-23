@@ -34,12 +34,9 @@ const CompleteProfilePage = () => {
     setLoading(true);
 
     try {
-      const response = await axiosConfig.post('/auth/complete-profile', formData);
-
-      if (response.data.success) {
-        localStorage.setItem('name', formData.name);
-        navigate('/dashboard');
-      }
+      await axiosConfig.post('/auth/complete-profile', formData);
+      localStorage.setItem('name', formData.name);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to complete profile. Please try again.');
     } finally {

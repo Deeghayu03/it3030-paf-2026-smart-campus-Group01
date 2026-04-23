@@ -7,7 +7,7 @@ import AdminBookingItem from '../../components/ui/AdminBookingItem';
 import Button from '../../components/ui/Button/Button';
 import { getMyBookings, getAllBookings, createBooking, updateBooking, cancelBooking, approveBooking, rejectBooking, deleteBooking } from '../../services/bookingService';
 import { AuthContext } from '../../context/AuthContext';
-import { formatTime } from '../../utils/formatTime';
+import { formatTime } from '../../utils/timeFormatter';
 import './BookingsPage.css';
 
 const BookingsPage = () => {
@@ -85,7 +85,8 @@ const BookingsPage = () => {
     try {
       const response = await getMyBookings();
       console.log("My Bookings fetched:", response.data);
-      setBookings(response.data);
+      const data = response.data?.data || response.data?.bookings || response.data;
+      setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("FETCH_MY_BOOKINGS_ERROR:", err.response?.data || err.message);
       const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
@@ -105,7 +106,8 @@ const BookingsPage = () => {
     if (!silent) setLoading(true);
     try {
       const response = await getAllBookings();
-      setAdminBookings(response.data);
+      const data = response.data?.data || response.data?.bookings || response.data;
+      setAdminBookings(Array.isArray(data) ? data : []);
       console.log("Admin Bookings fetched:", response.data);
     } catch (err) {
       console.error("FETCH_ADMIN_BOOKINGS_ERROR:", err.response?.data || err.message);

@@ -1,6 +1,6 @@
 import React from 'react';
 import './BookingCard.css';
-import { formatTime } from '../../utils/formatTime';
+import { formatTime } from '../../utils/timeFormatter';
 
 const BookingCard = ({ booking, onDelete, onEdit, onBookAgain, onApprove, onReject, currentUser }) => {
   const {
