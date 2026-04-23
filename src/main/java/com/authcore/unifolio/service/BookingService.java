@@ -107,14 +107,18 @@ public class BookingService {
 
     public List<BookingResponseDTO> getMyBookings() {
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return bookingRepository.findByUser(currentUser).stream()
+        System.out.println("DEBUG: User ID: " + currentUser.getId());
+        List<Booking> bookings = bookingRepository.findByUser(currentUser);
+        System.out.println("DEBUG: Bookings found for user: " + bookings.size());
+        return bookings.stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
 
     public List<BookingResponseDTO> getAllBookings() {
-        return bookingRepository.findAll()
-                .stream()
+        List<Booking> bookings = bookingRepository.findAll();
+        System.out.println("DEBUG: Total bookings found (Admin): " + bookings.size());
+        return bookings.stream()
                 .map(this::mapToResponseDTO)
                 .toList();
     }
