@@ -87,13 +87,22 @@ public class ResourceService {
         existingResource.setAvailableFrom(updatedResource.getAvailableFrom());
         existingResource.setAvailableTo(updatedResource.getAvailableTo());
         existingResource.setStatus(updatedResource.getStatus());
-        existingResource.setDescription(updatedResource.getDescription());
+        existingResource.setDescription(
+                updatedResource.getDescription() != null
+                        ? updatedResource.getDescription().trim()
+                        : null
+        );
 
         return resourceRepository.save(existingResource);
     }
 
     public Resource updateResourceStatus(Long id, Resource.ResourceStatus status) {
         Resource resource = getResourceById(id);
+
+        if (resource.getStatus() == status) {
+            throw new RuntimeException("Resource is already in " + status + " status");
+        }
+
         resource.setStatus(status);
         return resourceRepository.save(resource);
     }
