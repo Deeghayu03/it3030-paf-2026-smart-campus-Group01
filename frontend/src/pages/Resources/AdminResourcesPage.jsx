@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import {
     getResources,
@@ -6,6 +6,9 @@ import {
     createResource,
     updateResource
 } from '../../services/resourceService';
+import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import '../Dashboard/DashboardPage.css';
 import './ResourcesPage.css';
 
@@ -16,14 +19,15 @@ const AdminResourcesPage = () => {
     const [showForm, setShowForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const [toast, setToast] = useState({ show: false, name: '' });
     const [editingResourceId, setEditingResourceId] = useState(null);
+    const [resourceToDelete, setResourceToDelete] = useState(null);
 
     const [filters, setFilters] = useState({
-        location: '',
+        search: '',
         type: '',
-        status: ''
+        status: '',
+        minCapacity: ''
     });
 
     const [formData, setFormData] = useState({
@@ -59,35 +63,108 @@ const AdminResourcesPage = () => {
         return type.replaceAll('_', ' ');
     };
 
+    const formatStatus = (status) => {
+        if (!status) return 'Not specified';
+        return status.replaceAll('_', ' ');
+    };
+
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters((prev) => ({ ...prev, [name]: value }));
     };
 
-    const filteredResources = resources.filter((r) =>
-        (!filters.location ||
-            r.location?.toLowerCase().includes(filters.location.toLowerCase())) &&
-        (!filters.type || r.type === filters.type) &&
-        (!filters.status || r.status === filters.status)
-    );
+    const clearFilters = () => {
+        setFilters({
+            search: '',
+            type: '',
+            status: '',
+            minCapacity: ''
+        });
+    };
+
+    const filteredResources = useMemo(() => {
+        return resources.filter((r) => {
+            const matchesSearch =
+                !filters.search ||
+                r.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+                r.location?.toLowerCase().includes(filters.search.toLowerCase());
+
+            const matchesType =
+                !filters.type || r.type === filters.type;
+
+            const matchesStatus =
+                !filters.status || r.status === filters.status;
+
+            const matchesCapacity =
+                filters.minCapacity === '' ||
+                (r.capacity ?? 0) >= Number(filters.minCapacity);
+
+            return matchesSearch && matchesType && matchesStatus && matchesCapacity;
+        });
+    }, [resources, filters]);
 
     const showToast = (name) => {
         setToast({ show: true, name });
         setTimeout(() => setToast({ show: false, name: '' }), 3200);
     };
 
-    const handleDelete = async (id) => {
-        const resource = resources.find((r) => r.id === id);
+    const confirmDelete = async () => {
+        if (!resourceToDelete) return;
+
         try {
-            await deleteResource(id);
-            setResources((prev) => prev.filter((r) => r.id !== id));
-            setConfirmDeleteId(null);
-            showToast(resource?.name || 'Resource');
+            await deleteResource(resourceToDelete.id);
+            setResources((prev) => prev.filter((r) => r.id !== resourceToDelete.id));
+            showToast(resourceToDelete.name || 'Resource');
+            setResourceToDelete(null);
         } catch (error) {
             console.error('Failed to delete resource:', error);
-            setConfirmDeleteId(null);
             alert('Failed to delete resource. Please try again.');
+            setResourceToDelete(null);
         }
+    };
+
+    const handleDownloadResourcePdf = (resource) => {
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text('Resource Details', 14, 20);
+
+        doc.setFontSize(11);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+
+        autoTable(doc, {
+            startY: 36,
+            head: [['Field', 'Value']],
+            body: [
+                ['ID', resource.id ?? ''],
+                ['Name', resource.name ?? ''],
+                ['Type', formatType(resource.type)],
+                ['Location', resource.location ?? ''],
+                ['Capacity', resource.capacity ?? '—'],
+                ['Available From', resource.availableFrom ?? ''],
+                ['Available To', resource.availableTo ?? ''],
+                ['Status', formatStatus(resource.status)],
+                ['Description', resource.description || '—']
+            ],
+            theme: 'grid',
+            headStyles: {
+                fillColor: [37, 99, 235]
+            },
+            styles: {
+                fontSize: 10,
+                cellPadding: 4
+            },
+            columnStyles: {
+                0: { cellWidth: 50 },
+                1: { cellWidth: 120 }
+            }
+        });
+
+        const safeFileName = (resource.name || 'resource')
+            .replace(/[^a-z0-9]/gi, '_')
+            .toLowerCase();
+
+        doc.save(`${safeFileName}_details.pdf`);
     };
 
     const handleInputChange = (e) => {
@@ -134,7 +211,7 @@ const AdminResourcesPage = () => {
             description: resource.description || ''
         });
         setShowForm(true);
-        setConfirmDeleteId(null);
+        setResourceToDelete(null);
     };
 
     const isSpaceResource =
@@ -394,14 +471,15 @@ const AdminResourcesPage = () => {
 
                 {!loading && !error && (
                     <>
-                        <div className="resources-filters">
+                        <div className="resources-filters better-filters">
                             <input
                                 type="text"
-                                name="location"
-                                placeholder="Search by location..."
-                                value={filters.location}
+                                name="search"
+                                placeholder="Search by resource name or location..."
+                                value={filters.search}
                                 onChange={handleFilterChange}
                             />
+
                             <select name="type" value={filters.type} onChange={handleFilterChange}>
                                 <option value="">All types</option>
                                 <option value="LECTURE_HALL">Lecture Hall</option>
@@ -409,11 +487,30 @@ const AdminResourcesPage = () => {
                                 <option value="MEETING_ROOM">Meeting Room</option>
                                 <option value="EQUIPMENT">Equipment</option>
                             </select>
+
                             <select name="status" value={filters.status} onChange={handleFilterChange}>
                                 <option value="">All statuses</option>
                                 <option value="ACTIVE">Active</option>
+                                <option value="UNDER_MAINTENANCE">Under Maintenance</option>
                                 <option value="OUT_OF_SERVICE">Out of Service</option>
                             </select>
+
+                            <input
+                                type="number"
+                                name="minCapacity"
+                                placeholder="Min capacity"
+                                value={filters.minCapacity}
+                                onChange={handleFilterChange}
+                                min="1"
+                            />
+
+                            <button
+                                type="button"
+                                className="clear-filter-btn"
+                                onClick={clearFilters}
+                            >
+                                Clear
+                            </button>
                         </div>
 
                         <p className="resources-count">
@@ -435,7 +532,7 @@ const AdminResourcesPage = () => {
                                         <th>Capacity</th>
                                         <th>Available</th>
                                         <th>Status</th>
-                                        <th></th>
+                                        <th>Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -450,48 +547,36 @@ const AdminResourcesPage = () => {
                                             </td>
                                             <td data-label="Status">
                                                     <span className={`status-badge ${resource.status?.toLowerCase()}`}>
-                                                        {resource.status}
+                                                        {formatStatus(resource.status)}
                                                     </span>
                                             </td>
                                             <td data-label="Actions">
-                                                {confirmDeleteId === resource.id ? (
-                                                    <div className="confirm-inline">
-                                                            <span className="confirm-text">
-                                                                Delete "{resource.name}"? This cannot be undone.
-                                                            </span>
-                                                        <button
-                                                            type="button"
-                                                            className="btn-yes"
-                                                            onClick={() => handleDelete(resource.id)}
-                                                        >
-                                                            Yes, delete
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="cancel-btn"
-                                                            onClick={() => setConfirmDeleteId(null)}
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="resource-actions">
-                                                        <button
-                                                            type="button"
-                                                            className="edit-btn"
-                                                            onClick={() => handleEditClick(resource)}
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="delete-btn"
-                                                            onClick={() => setConfirmDeleteId(resource.id)}
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                <div className="resource-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="download-btn better-download-btn"
+                                                        onClick={() => handleDownloadResourcePdf(resource)}
+                                                        title="Download resource details as PDF"
+                                                    >
+                                                        <Download size={16} />
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="edit-btn better-edit-btn"
+                                                        onClick={() => handleEditClick(resource)}
+                                                    >
+                                                        Edit
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="delete-btn better-delete-btn"
+                                                        onClick={() => setResourceToDelete(resource)}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -500,6 +585,35 @@ const AdminResourcesPage = () => {
                             </div>
                         )}
                     </>
+                )}
+
+                {resourceToDelete && (
+                    <div className="delete-modal-overlay">
+                        <div className="delete-modal">
+                            <h3>Delete Resource</h3>
+                            <p>
+                                Are you sure you want to delete <strong>{resourceToDelete.name}</strong>?
+                            </p>
+                            <p className="delete-warning">This action cannot be undone.</p>
+
+                            <div className="delete-modal-actions">
+                                <button
+                                    type="button"
+                                    className="modal-no-btn"
+                                    onClick={() => setResourceToDelete(null)}
+                                >
+                                    No
+                                </button>
+                                <button
+                                    type="button"
+                                    className="modal-yes-btn"
+                                    onClick={confirmDelete}
+                                >
+                                    Yes, Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </DashboardLayout>
