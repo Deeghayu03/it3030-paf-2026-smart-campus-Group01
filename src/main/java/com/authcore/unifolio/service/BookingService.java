@@ -198,24 +198,18 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only cancel your own bookings");
         }
 
-        // Admin can cancel APPROVED bookings. User can cancel PENDING or APPROVED? 
-        // Student: Cancel own booking. Admin: Cancel APPROVED bookings.
-        if (isAdmin) {
-            if (booking.getStatus() != Booking.BookingStatus.APPROVED) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin can only cancel APPROVED bookings");
-            }
-            if (reason == null || reason.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cancellation reason is required for Admin");
-            }
-        } else {
-            // Student logic: can cancel PENDING or APPROVED
-            if (booking.getStatus() != Booking.BookingStatus.PENDING && booking.getStatus() != Booking.BookingStatus.APPROVED) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot cancel a booking in status: " + booking.getStatus());
-            }
+        if (booking.getStatus() == Booking.BookingStatus.REJECTED || booking.getStatus() == Booking.BookingStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking is already in a final state (REJECTED/CANCELLED) and cannot be cancelled");
         }
+
 
         booking.setStatus(Booking.BookingStatus.CANCELLED);
         booking.setCancellationReason(reason);
+        booking.setCancelledAt(java.time.LocalDateTime.now());
+        booking.setCancelledBy(currentUser.getRole().name().equals("USER") ? "STUDENT" : currentUser.getRole().name());
+        
+        System.out.println("CANCELLED AT: " + booking.getCancelledAt());
+        
         return mapToResponseDTO(bookingRepository.save(booking));
     }
 
@@ -228,6 +222,10 @@ public class BookingService {
         }
         
         booking.setStatus(Booking.BookingStatus.APPROVED);
+        booking.setApprovedAt(java.time.LocalDateTime.now());
+        
+        System.out.println("APPROVED AT: " + booking.getApprovedAt());
+        
         return mapToResponseDTO(bookingRepository.save(booking));
     }
 
@@ -246,6 +244,10 @@ public class BookingService {
         booking.setStatus(Booking.BookingStatus.REJECTED);
         booking.setRejectionReason(reason);
         booking.setRejectedReason(reason); // Setting both for compatibility
+        booking.setRejectedAt(java.time.LocalDateTime.now());
+        
+        System.out.println("REJECTED AT: " + booking.getRejectedAt());
+        
         return mapToResponseDTO(bookingRepository.save(booking));
     }
 
@@ -301,21 +303,22 @@ public class BookingService {
         return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
-    public void deleteBooking(Long id) {
-        User currentUser = getCurrentUser();
+    public Map<String, Object> getBookingTimeline(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
-
-        if (!booking.getUser().getId().equals(currentUser.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unauthorized");
-        }
-
-        if (booking.getStatus() == Booking.BookingStatus.REJECTED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete rejected bookings");
-        }
-
-        bookingRepository.delete(booking);
+        
+        return Map.of(
+            "createdAt", booking.getCreatedAt() != null ? booking.getCreatedAt() : "",
+            "approvedAt", booking.getApprovedAt() != null ? booking.getApprovedAt() : "",
+            "rejectedAt", booking.getRejectedAt() != null ? booking.getRejectedAt() : "",
+            "cancelledAt", booking.getCancelledAt() != null ? booking.getCancelledAt() : "",
+            "status", booking.getStatus(),
+            "cancellationReason", booking.getCancellationReason() != null ? booking.getCancellationReason() : "",
+            "cancelledBy", booking.getCancelledBy() != null ? booking.getCancelledBy() : ""
+        );
     }
+
+
 
     private BookingResponseDTO mapToResponseDTO(Booking booking) {
         return BookingResponseDTO.builder()
@@ -333,6 +336,7 @@ public class BookingService {
                 .rejectionReason(booking.getRejectionReason())
                 .rejectedReason(booking.getRejectedReason())
                 .cancellationReason(booking.getCancellationReason())
+                .cancelledBy(booking.getCancelledBy())
                 .role(booking.getUser().getRole().name().equals("ADMIN") ? "admin" : "student")
                 .userRole(booking.getUser().getRole().name().equals("USER") ? "STUDENT" : booking.getUser().getRole().name())
                 .isAdminBooking(booking.getIsAdminBooking())

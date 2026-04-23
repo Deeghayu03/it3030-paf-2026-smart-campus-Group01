@@ -1,6 +1,6 @@
 import React from 'react';
 import './ConflictResolution.css';
-import { formatTime } from '../../utils/timeFormatter';
+import { formatTime, formatTimeRange } from '../../utils/timeFormatter';
 
 const ConflictResolution = ({ suggestions, onSelect }) => {
   if (!suggestions || suggestions.length === 0) return null;
@@ -23,7 +23,7 @@ const ConflictResolution = ({ suggestions, onSelect }) => {
                 {slot.type || 'AVAILABLE'}
               </span>
               <div className="suggestion-time">
-                {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                {formatTimeRange(slot.startTime, slot.endTime)}
               </div>
               <div className="suggestion-context">
                 {slot.context || 'Available for the same date'}

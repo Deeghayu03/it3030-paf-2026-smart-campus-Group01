@@ -5,7 +5,8 @@ import BookingForm from '../../components/ui/BookingForm';
 import ConflictResolution from '../../components/ui/ConflictResolution';
 import AdminBookingItem from '../../components/ui/AdminBookingItem';
 import Button from '../../components/ui/Button/Button';
-import { getMyBookings, getAllBookings, createBooking, updateBooking, cancelBooking, approveBooking, rejectBooking, deleteBooking } from '../../services/bookingService';
+import CancelBookingModal from '../../components/common/CancelBookingModal';
+import { getMyBookings, getAllBookings, createBooking, updateBooking, cancelBooking, approveBooking, rejectBooking } from '../../services/bookingService';
 import { AuthContext } from '../../context/AuthContext';
 import { formatTime } from '../../utils/timeFormatter';
 import './BookingsPage.css';
@@ -60,8 +61,7 @@ const BookingsPage = () => {
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteBookingId, setDeleteBookingId] = useState(null);
+
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelBookingId, setCancelBookingId] = useState(null);
 
@@ -183,18 +183,8 @@ const BookingsPage = () => {
     setMessage(null);
   };
 
-  const handleCancel = async (id) => {
+  const handleCancel = async (id, reason) => {
     const isActuallyAdmin = role === 'ADMIN' && viewMode === 'admin';
-    let reason = null;
-
-    if (isActuallyAdmin) {
-      reason = window.prompt('Enter cancellation reason (REQUIRED for admin):');
-      if (reason === null) return; // User cancelled prompt
-      if (!reason.trim()) {
-        alert('Reason is required for admin cancellation');
-        return;
-      }
-    }
     
     try {
       await cancelBooking(id, reason);
@@ -206,32 +196,11 @@ const BookingsPage = () => {
   };
 
   const initiateCancel = (id) => {
-    const isActuallyAdmin = role === 'ADMIN' && viewMode === 'admin';
-    if (isActuallyAdmin) {
-      handleCancel(id);
-    } else {
-      setCancelBookingId(id);
-      setShowCancelModal(true);
-    }
+    setCancelBookingId(id);
+    setShowCancelModal(true);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await deleteBooking(id);
-      setMessage({ type: 'success', text: 'Booking deleted permanently' });
-      
-      // Immediately remove from UI without refresh
-      setBookings(prev => prev.filter(b => b.id !== id));
-      setAdminBookings(prev => prev.filter(b => b.id !== id));
-    } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to delete booking' });
-    }
-  };
 
-  const initiateDelete = (id) => {
-    setDeleteBookingId(id);
-    setShowDeleteModal(true);
-  };
 
   const handleApprove = async (id) => {
     try {
@@ -449,7 +418,7 @@ const BookingsPage = () => {
                         key={booking.id} 
                         booking={booking} 
                         currentUser={user}
-                        onDelete={initiateDelete}
+                        onCancel={initiateCancel}
                         onEdit={handleEdit}
                         onBookAgain={handleBookAgain}
                         onApprove={handleApprove}
@@ -556,65 +525,18 @@ const BookingsPage = () => {
         </div>
       )}
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-[400px] p-6 animate-scaleIn">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Delete Booking
-            </h2>
-            <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to permanently delete this booking? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  handleDelete(deleteBookingId);
-                  setShowDeleteModal(false);
-                }}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 shadow-sm transition"
-              >
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-[400px] p-6 animate-scaleIn">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Cancel Booking
-            </h2>
-            <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to cancel this booking? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowCancelModal(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-              >
-                Keep Booking
-              </button>
-              <button
-                onClick={() => {
-                  handleCancel(cancelBookingId);
-                  setShowCancelModal(false);
-                }}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 shadow-sm transition"
-              >
-                Yes, Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <CancelBookingModal 
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={(reason) => {
+          if (cancelBookingId) {
+            handleCancel(cancelBookingId, reason);
+          }
+        }}
+        isAdmin={role === 'ADMIN' && viewMode === 'admin'}
+      />
     </DashboardLayout>
   );
 };

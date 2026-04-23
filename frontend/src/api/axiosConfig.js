@@ -6,9 +6,10 @@ const axiosInstance = axios.create({
   baseURL: 'http://localhost:8080/api'
 });
 
-axiosInstance.interceptors.request.use(
+api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    console.log("TOKEN:", token);
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -19,7 +20,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-axiosInstance.interceptors.response.use(
+api.interceptors.response.use(
   (response) => {
     return response;
   },
@@ -34,4 +35,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance;
+export default api;

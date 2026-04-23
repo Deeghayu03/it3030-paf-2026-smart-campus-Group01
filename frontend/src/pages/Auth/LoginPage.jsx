@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axiosInstance from '../../api/axiosConfig';
+import api from '../../api/axiosConfig';
 import useAuth from '../../hooks/useAuth';
 import { ROUTES } from '../../constants/routes';
 import './LoginPage.css';
@@ -28,7 +28,7 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await axiosInstance.post('/auth/login', formData);
+      const response = await api.post('/auth/login', formData);
       const data = response.data;
 
       const roleText = String(data.role || '').toUpperCase();

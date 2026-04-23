@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
+import api from '../../api/axiosConfig';
 import {
     getResources,
     deleteResource,
@@ -45,6 +46,8 @@ const AdminResourcesPage = () => {
         try {
             setLoading(true);
             setError('');
+            
+            console.log("API URL:", api.defaults.baseURL + "/resources");
             const response = await getResources();
             console.log("SUCCESS RESPONSE:", response);
             console.log("RESPONSE DATA:", response.data);
