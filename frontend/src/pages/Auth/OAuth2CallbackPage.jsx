@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import { ROUTES } from '../../constants/routes';
 import './OAuth2CallbackPage.css';
@@ -7,51 +7,45 @@ import './OAuth2CallbackPage.css';
 const OAuth2CallbackPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [searchParams] = useSearchParams();
+  const processed = useRef(false);
 
   useEffect(() => {
-    const processOAuth2Login = () => {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
-      const role = params.get('role');
-      const email = params.get('email');
-      const name = params.get('name');
+    if (processed.current) return;
+    processed.current = true;
 
-      if (token && role && email && name) {
-        const decodedName = decodeURIComponent(name);
-        const upperRole = role.toUpperCase();
+    const token = searchParams.get('token');
+    const role = searchParams.get('role');
+    const email = searchParams.get('email');
+    const name = searchParams.get('name');
+    const newUser = searchParams.get('newUser');
 
-        localStorage.setItem('token', token);
-        localStorage.setItem('role', role);
-        localStorage.setItem('email', email);
-        localStorage.setItem('name', decodedName);
-        localStorage.setItem('isAuthenticated', 'true');
+    if (token && role && email) {
+      login({ email, role, name: decodeURIComponent(name || '') }, token);
 
-        login({ email, role, name: decodedName }, token);
-
-        if (upperRole.includes('ADMIN')) {
-          navigate(ROUTES.ADMIN_DASHBOARD);
-        } else if (upperRole.includes('TECHNICIAN')) {
-          navigate(ROUTES.TECHNICIAN_DASHBOARD);
-        } else {
-          navigate(ROUTES.DASHBOARD);
-        }
+      if (newUser === 'true') {
+        navigate('/complete-profile', { replace: true });
+      } else if (role === 'ADMIN') {
+        navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      } else if (role === 'TECHNICIAN') {
+        navigate(ROUTES.TECHNICIAN_DASHBOARD, { replace: true });
       } else {
-        console.error('OAuth2 login failed: Missing parameters');
-        navigate(`${ROUTES.LOGIN}?error=oauth2_failed`);
+        navigate(ROUTES.DASHBOARD, { replace: true });
       }
-    };
-
-    processOAuth2Login();
-  }, [navigate, login]);
+    } else {
+      console.error('OAuth2 login failed: Missing parameters');
+      navigate(`${ROUTES.LOGIN}?error=oauth2_failed`, { replace: true });
+    }
+  }, []);
 
   return (
-      <div className="oauth2-callback-container">
-        <div className="oauth2-callback-content">
-          <div className="spinner"></div>
-          <h2>Signing you in with Google...</h2>
-          <p>Please wait a moment while we process your request.</p>
-        </div>
+    <div className="oauth2-callback-container">
+      <div className="oauth2-callback-content">
+        <div className="spinner"></div>
+        <h2>Signing you in with Google...</h2>
+        <p>Please wait a moment while we process your request.</p>
       </div>
+    </div>
   );
 };
 

@@ -1,0 +1,304 @@
+.booking-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  min-height: 220px;
+}
+
+.booking-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+/* HEADER */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.resource-display-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+}
+
+/* PILLS */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pill-approved {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.pill-pending {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+}
+
+.pill-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.pill-cancelled {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Solid rejected badge like in image for Rejected */
+.status-rejected .pill-rejected {
+  background-color: #ef4444;
+  color: white;
+  border-radius: 8px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #22c55e;
+  border-radius: 50%;
+}
+
+.status-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* SUBTEXT */
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 24px;
+}
+
+.info-icon-svg {
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+}
+
+/* GRID DETAILS */
+.grid-details-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid #f1f5f9;
+  margin-bottom: 24px;
+}
+
+.detail-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.divider-vertical {
+  width: 1px;
+  height: 32px;
+  background-color: #e2e8f0;
+}
+
+.upper-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.value-display {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.status-approved .highlight-time,
+.status-pending .highlight-time,
+.status-rejected .highlight-time {
+  color: #3b82f6; /* Blue time like in the image */
+}
+
+/* FOOTER */
+.card-action-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-danger {
+  color: #ef4444;
+}
+
+.btn-gray {
+  color: #64748b;
+}
+
+.text-btn:hover {
+  opacity: 0.7;
+}
+
+.inline-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* PENDING FOOTER */
+.pending-footer {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.muted-italic-text {
+  font-size: 12px;
+  font-style: italic;
+  color: #94a3b8;
+}
+
+.help-icon-small {
+  width: 16px;
+  height: 16px;
+  color: #cbd5e1;
+}
+
+/* REJECTION BOX */
+.rejection-reason-message {
+  font-size: 12px;
+  color: #ef4444;
+  margin: 0;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* Status variants for card specific logic if needed */
+/* OWNER ACTIONS */
+.owner-actions-solid {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.btn-edit-direct {
+  background-color: #3b82f6;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-edit-direct:hover { background-color: #2563eb; }
+
+.btn-delete-direct {
+  background-color: #ef4444;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-delete-direct:hover { background-color: #dc2626; }
+
+/* ADMIN PANEL REVIEW */
+.admin-review-panel {
+  width: 100%;
+}
+
+.review-btn-group {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-approve-direct {
+  background-color: #10b981;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-approve-direct:hover { background-color: #059669; }
+
+.btn-reject-direct {
+  background-color: #ef4444;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reject-direct:hover { background-color: #dc2626; }
+
+.review-status-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.review-status-label.approved { color: #10b981; }
+.review-status-label.rejected { color: #ef4444; }
+
+.rejection-reason-small {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin: 4px 0 0 0;
+  font-style: italic;
+}
+

@@ -38,7 +38,10 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     private BookingStatus status;
 
-    private String rejectionReason;
+    private String rejectionReason; // Existing - might be used by old code
+    private String rejectedReason;  // New requirement
+    private String cancellationReason; // New requirement
+    private Boolean isAdminBooking = false;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

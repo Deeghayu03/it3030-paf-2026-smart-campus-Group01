@@ -16,10 +16,9 @@ export const ROUTES = {
     ADMIN_BOOKINGS: '/admin/bookings',
     ADMIN_TICKETS: '/admin/tickets',
     ADMIN_NOTIFICATIONS: '/admin/notifications',
+    ADMIN_USERS: '/admin/users',
 
     TECHNICIAN_TICKETS: '/technician/tickets',
     TECHNICIAN_NOTIFICATIONS: '/technician/notifications',
     TECHNICIAN_RESOURCES: '/technician/resources'
-
-
 };
