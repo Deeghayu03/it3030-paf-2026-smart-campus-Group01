@@ -1,7 +1,6 @@
-import React from 'react';
-import './BookingCard.css';
 import React, { useState } from 'react';
 import './BookingCard.css';
+
 
 import { formatTime, formatTimeRange } from '../../utils/timeFormatter';
 import { formatRole } from '../../utils/helpers';

@@ -15,7 +15,8 @@ const formatTime = (time) => {
 };
 
 const BookingTimeline = ({ timelineData }) => {
-  console.log("TIMELINE DATA:", timelineData);
+  console.log("TIMELINE:", timelineData);
+
 
   if (!timelineData) return null;
 

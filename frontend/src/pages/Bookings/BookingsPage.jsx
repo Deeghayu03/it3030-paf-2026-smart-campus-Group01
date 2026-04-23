@@ -42,8 +42,15 @@ const BookingsPage = () => {
   // Helper function to format date to ISO format (YYYY-MM-DD)
   const formatDate = (date) => {
     if (!date) return "";
-    return new Date(date).toISOString().split("T")[0];
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return date;
+      return d.toISOString().split("T")[0];
+    } catch (e) {
+      return date;
+    }
   };
+
 
   const [bookings, setBookings] = useState([]);
   const [adminBookings, setAdminBookings] = useState([]);
@@ -86,9 +93,14 @@ const BookingsPage = () => {
       const response = await getMyBookings();
       console.log("My Bookings fetched:", response.data);
       const data = response.data?.data || response.data?.bookings || response.data;
+      console.log("Bookings processed:", data);
       setBookings(Array.isArray(data) ? data : []);
+
     } catch (err) {
       console.error("FETCH_MY_BOOKINGS_ERROR:", err.response?.data || err.message);
+      console.log("Bookings set to empty array due to error");
+      setBookings([]);
+
       const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
       if (err.response?.status === 403) {
         setMessage({ type: 'error', text: 'Access denied: You can only view your own bookings.' });
@@ -107,7 +119,9 @@ const BookingsPage = () => {
     try {
       const response = await getAllBookings();
       const data = response.data?.data || response.data?.bookings || response.data;
+      console.log("Admin Bookings processed:", data);
       setAdminBookings(Array.isArray(data) ? data : []);
+
       console.log("Admin Bookings fetched:", response.data);
     } catch (err) {
       console.error("FETCH_ADMIN_BOOKINGS_ERROR:", err.response?.data || err.message);
@@ -374,8 +388,9 @@ const BookingsPage = () => {
                     return sortBy === 'date_desc' ? dateB - dateA : dateA - dateB;
                   })
                   .length > 0 ? (
-                  adminBookings
+                  (adminBookings || [])
                     .filter(b => statusFilter === 'ALL' || b.status === statusFilter)
+
                     .filter(b => b.role === 'student' || b.userRole === 'STUDENT' || (b.userRole !== 'ADMIN' && b.role !== 'admin')) // Safety check: only students
                     .sort((a, b) => {
                       const dateA = new Date(a.bookingDate + 'T' + a.startTime);
@@ -405,8 +420,9 @@ const BookingsPage = () => {
                 )) // Personal tab: show bookings owned/created by the admin
                 .length > 0 ? (
                 <div className="bookings-grid">
-                  {bookings
+                  {(bookings || [])
                     .filter(b => statusFilter === 'ALL' || b.status === statusFilter)
+
                     .filter(b => role !== 'ADMIN' || (
                       (b.userId && String(b.userId) === String(user?.id)) || 
                       (b.createdBy && String(b.createdBy) === String(user?.id)) ||
