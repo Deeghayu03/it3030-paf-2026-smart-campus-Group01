@@ -21,4 +21,5 @@ export const ROUTES = {
     TECHNICIAN_NOTIFICATIONS: '/technician/notifications',
     TECHNICIAN_RESOURCES: '/technician/resources'
 
+
 };

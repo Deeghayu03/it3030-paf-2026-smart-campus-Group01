@@ -25,6 +25,7 @@ public class Resource {
     private LocalTime availableTo;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ResourceStatus status;
 
     private String description;
@@ -34,6 +35,8 @@ public class Resource {
     }
 
     public enum ResourceStatus {
-        ACTIVE, OUT_OF_SERVICE
+        ACTIVE,
+        UNDER_MAINTENANCE,
+        OUT_OF_SERVICE
     }
 }

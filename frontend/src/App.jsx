@@ -15,6 +15,7 @@ import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
 import OAuth2CallbackPage from './pages/Auth/OAuth2CallbackPage';
 import AdminResourcesPage from './pages/Resources/AdminResourcesPage';
 import TechnicianDashboardPage from './pages/Technician/TechnicianDashboardPage';
+import TechnicianResourcesPage from './pages/Technician/TechnicianResourcesPage';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -137,14 +138,14 @@ const App = () => {
                   </ProtectedRoute>
                 }
             />
-            <Route
-                path={ROUTES.TECHNICIAN_RESOURCES}
-                element={
-                  <ProtectedRoute>
-                    <ResourcesPage />
-                  </ProtectedRoute>
-                }
-            />
+              <Route
+                  path={ROUTES.TECHNICIAN_RESOURCES}
+                  element={
+                      <ProtectedRoute>
+                          <TechnicianResourcesPage />
+                      </ProtectedRoute>
+                  }
+              />
 
             <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
           </Routes>
