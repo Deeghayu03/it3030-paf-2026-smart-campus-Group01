@@ -22,9 +22,9 @@ const DashboardPage = () => {
 
         setStats({
           resources: response.data?.length || 0,
-          myBookings: 3,
-          pendingBookings: 1,
-          tickets: 2,
+          myBookings: 0,
+          pendingBookings: 0,
+          tickets: 0,
         });
       } catch (error) {
         console.error('Failed to load student dashboard data:', error);

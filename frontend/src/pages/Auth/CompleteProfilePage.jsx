@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosConfig from "../../api/axiosConfig";
+import api from "../../api/axiosConfig";
 import "./CompleteProfilePage.css";
 
 const CompleteProfilePage = () => {
@@ -34,7 +34,7 @@ const CompleteProfilePage = () => {
     setLoading(true);
 
     try {
-      const response = await axiosConfig.post('/auth/complete-profile', formData);
+      const response = await api.post('/auth/complete-profile', formData);
 
       if (response.data.success) {
         localStorage.setItem('name', formData.name);

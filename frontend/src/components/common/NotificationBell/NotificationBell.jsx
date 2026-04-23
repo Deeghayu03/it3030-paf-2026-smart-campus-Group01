@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosConfig from "../../../api/axiosConfig";
+import api from "../../../api/axiosConfig";
 import { ROUTES } from "../../../constants/routes";
 import "./NotificationBell.css";
 
@@ -14,7 +14,7 @@ const NotificationBell = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await axiosConfig.get("/notifications/unread-count");
+      const response = await api.get("/notifications/unread-count");
       setUnreadCount(response.data.count || 0);
     } catch (error) {
       console.error("Error fetching unread count:", error);
@@ -24,7 +24,7 @@ const NotificationBell = () => {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await axiosConfig.get("/notifications/my");
+      const response = await api.get("/notifications/my");
       setNotifications(response.data || []);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -56,7 +56,7 @@ const NotificationBell = () => {
 
   const handleMarkAsRead = async (id) => {
     try {
-      await axiosConfig.put(`/notifications/${id}/read`);
+      await api.put(`/notifications/${id}/read`);
       setNotifications(notifications.map(n =>
         n.id === id ? { ...n, read: true } : n
       ));
@@ -68,7 +68,7 @@ const NotificationBell = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await axiosConfig.put("/notifications/read-all");
+      await api.put("/notifications/read-all");
       setNotifications(notifications.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (error) {

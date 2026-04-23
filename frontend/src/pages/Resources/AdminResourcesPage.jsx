@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
+import api from '../../api/axiosConfig';
 import {
     getResources,
     deleteResource,
     createResource,
     updateResource
 } from '../../services/resourceService';
+import { formatTime, formatTimeRange } from '../../utils/timeFormatter';
 import '../Dashboard/DashboardPage.css';
 import './ResourcesPage.css';
 
@@ -44,10 +46,19 @@ const AdminResourcesPage = () => {
         try {
             setLoading(true);
             setError('');
+            
+            console.log("API URL:", api.defaults.baseURL + "/resources");
             const response = await getResources();
-            setResources(response.data);
+            console.log("FULL RESPONSE:", response);
+            console.log("RESPONSE DATA:", response.data);
+            
+            const data = response.data?.data || response.data?.resources || response.data;
+            const resourcesList = Array.isArray(data) ? data : [];
+            setResources(resourcesList);
         } catch (error) {
-            console.error('Failed to load resources:', error);
+            console.log("ERROR STATUS:", error.response?.status);
+            console.log("ERROR DATA:", error.response?.data);
+            console.log("ERROR FULL:", error);
             setError('Failed to load resources. Please try again.');
         } finally {
             setLoading(false);
@@ -446,7 +457,7 @@ const AdminResourcesPage = () => {
                                             <td data-label="Location">{resource.location}</td>
                                             <td data-label="Capacity">{resource.capacity ?? '—'}</td>
                                             <td data-label="Available">
-                                                {resource.availableFrom} – {resource.availableTo}
+                                                {formatTimeRange(resource.availableFrom, resource.availableTo)}
                                             </td>
                                             <td data-label="Status">
                                                     <span className={`status-badge ${resource.status?.toLowerCase()}`}>

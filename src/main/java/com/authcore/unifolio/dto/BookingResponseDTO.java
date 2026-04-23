@@ -40,6 +40,7 @@ public class BookingResponseDTO {
     private String rejectionReason;
     private String rejectedReason;
     private String cancellationReason;
+    private String cancelledBy;
     private String role;
     private String userRole;
     private Boolean isAdminBooking;

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './BookingForm.css';
 import Button from './Button/Button';
 import resourceService from '../../services/resourceService';
+import api from '../../api/axiosConfig';
+import { formatTime, formatTimeRange } from '../../utils/timeFormatter';
 
 const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestions = null, onSelectSuggestion = null }) => {
   const [formData, setFormData] = useState({
@@ -19,10 +21,18 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
   useEffect(() => {
     const fetchResources = async () => {
       try {
+        console.log("API URL:", api.defaults.baseURL + "/resources");
         const response = await resourceService.getAllResources();
-        setResources(response.data);
-      } catch (err) {
-        console.error('Error fetching resources:', err);
+        console.log("FULL RESPONSE:", response);
+        console.log("RESPONSE DATA:", response.data);
+        
+        const data = response.data?.data || response.data?.resources || response.data;
+        const resourcesData = Array.isArray(data) ? data : [];
+        setResources(resourcesData);
+      } catch (error) {
+        console.log("ERROR STATUS:", error.response?.status);
+        console.log("ERROR DATA:", error.response?.data);
+        console.log("ERROR FULL:", error);
       }
     };
     fetchResources();
@@ -30,14 +40,15 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
 
   useEffect(() => {
     if (initialData) {
-      setFormData({
-        resourceId: initialData.resourceId || '',
-        bookingDate: initialData.bookingDate || initialData.date || '',
-        startTime: initialData.startTime || '',
-        endTime: initialData.endTime || '',
-        purpose: initialData.purpose || '',
-        expectedAttendees: initialData.expectedAttendees || initialData.attendees || ''
-      });
+      setFormData(prev => ({
+        ...prev,
+        resourceId: initialData.resourceId || prev.resourceId || '',
+        bookingDate: initialData.bookingDate || initialData.date || prev.bookingDate || '',
+        startTime: initialData.startTime || prev.startTime || '',
+        endTime: initialData.endTime || prev.endTime || '',
+        purpose: initialData.purpose || prev.purpose || '',
+        expectedAttendees: initialData.expectedAttendees || initialData.attendees || prev.expectedAttendees || ''
+      }));
     }
   }, [initialData]);
 
@@ -86,14 +97,7 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
     }
   };
 
-  const formatDisplayTime = (time) => {
-    if (!time) return '';
-    const [h, m] = time.split(':');
-    const hour = parseInt(h);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const h12 = hour % 12 || 12;
-    return `${h12}:${m} ${ampm}`;
-  };
+
 
   return (
     <form className="booking-form" onSubmit={handleSubmit}>
@@ -116,7 +120,7 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
         {selectedResource && (
           <div className="availability-info">
             <span className="availability-badge">
-                🕒 Available: {formatDisplayTime(selectedResource.availableFrom)} – {formatDisplayTime(selectedResource.availableTo)}
+                🕒 Available: {formatTime(selectedResource.availableFrom)} – {formatTime(selectedResource.availableTo)}
             </span>
           </div>
         )}
@@ -208,7 +212,7 @@ const BookingForm = ({ onSubmit, loading, initialData = null, conflictSuggestion
                 onClick={() => onSelectSuggestion(slot)}
                 className="suggestion-pill"
               >
-                {slot.startTime} - {slot.endTime}
+                {formatTimeRange(slot.startTime, slot.endTime)}
               </button>
             ))}
           </div>

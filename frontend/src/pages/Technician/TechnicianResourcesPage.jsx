@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../api/axiosConfig';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import './TechnicianResourcesPage.css';
 
@@ -10,21 +10,12 @@ const TechnicianResourcesPage = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
-    const API_URL = 'http://localhost:8080/api/resources';
-
     const fetchResources = async () => {
         try {
             setLoading(true);
             setError('');
 
-            const token = localStorage.getItem('token');
-
-            const response = await axios.get(API_URL, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
+            const response = await api.get('/resources');
             setResources(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to load resources');
@@ -43,16 +34,11 @@ const TechnicianResourcesPage = () => {
             setError('');
             setMessage('');
 
-            const token = localStorage.getItem('token');
-
-            await axios.patch(
-                `${API_URL}/${id}/status`,
+            await api.patch(
+                `/resources/${id}/status`,
                 null,
                 {
-                    params: { status },
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    params: { status }
                 }
             );
 
