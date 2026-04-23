@@ -22,6 +22,7 @@ const AdminResourcesPage = () => {
     const [toast, setToast] = useState({ show: false, name: '' });
     const [editingResourceId, setEditingResourceId] = useState(null);
     const [resourceToDelete, setResourceToDelete] = useState(null);
+    const [formErrors, setFormErrors] = useState({});
 
     const [filters, setFilters] = useState({
         search: '',
@@ -39,6 +40,29 @@ const AdminResourcesPage = () => {
         availableTo: '',
         description: ''
     });
+
+    const isSpaceResource =
+        formData.type === 'LECTURE_HALL' ||
+        formData.type === 'LAB' ||
+        formData.type === 'MEETING_ROOM';
+
+    const isTimeValid =
+        formData.availableFrom !== '' &&
+        formData.availableTo !== '' &&
+        formData.availableFrom < formData.availableTo;
+
+    const validate = () => {
+        const errors = {};
+        if (!formData.name.trim()) errors.name = 'Name is required';
+        if (!formData.type) errors.type = 'Type is required';
+        if (!formData.location.trim()) errors.location = 'Location is required';
+        if (isSpaceResource && !formData.capacity) errors.capacity = 'Capacity is required';
+        if (!formData.availableFrom) errors.availableFrom = 'Available From is required';
+        if (!formData.availableTo) errors.availableTo = 'Available To is required';
+        if (formData.availableFrom && formData.availableTo && !isTimeValid)
+            errors.availableTo = 'Available To must be later than Available From';
+        return errors;
+    };
 
     useEffect(() => {
         loadResources();
@@ -179,6 +203,9 @@ const AdminResourcesPage = () => {
         } else {
             setFormData((prev) => ({ ...prev, [name]: value }));
         }
+
+        // Clear the error for this field as user types
+        setFormErrors((prev) => ({ ...prev, [name]: '' }));
     };
 
     const resetForm = () => {
@@ -192,6 +219,7 @@ const AdminResourcesPage = () => {
             description: ''
         });
         setEditingResourceId(null);
+        setFormErrors({});
     };
 
     const closeForm = () => {
@@ -210,36 +238,20 @@ const AdminResourcesPage = () => {
             availableTo: resource.availableTo || '',
             description: resource.description || ''
         });
+        setFormErrors({});
         setShowForm(true);
         setResourceToDelete(null);
     };
 
-    const isSpaceResource =
-        formData.type === 'LECTURE_HALL' ||
-        formData.type === 'LAB' ||
-        formData.type === 'MEETING_ROOM';
-
-    const isTimeValid =
-        formData.availableFrom !== '' &&
-        formData.availableTo !== '' &&
-        formData.availableFrom < formData.availableTo;
-
-    const isFormValid =
-        formData.name.trim() !== '' &&
-        formData.type !== '' &&
-        formData.location.trim() !== '' &&
-        formData.availableFrom !== '' &&
-        formData.availableTo !== '' &&
-        isTimeValid &&
-        (!isSpaceResource || formData.capacity !== '');
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!isTimeValid) {
-            alert('Available To must be later than Available From.');
+        const errors = validate();
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
             return;
         }
+        setFormErrors({});
 
         try {
             setSubmitting(true);
@@ -346,8 +358,8 @@ const AdminResourcesPage = () => {
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     placeholder="Enter resource name"
-                                    required
                                 />
+                                {formErrors.name && <small className="error-text">{formErrors.name}</small>}
                             </div>
 
                             <div className="form-group">
@@ -356,7 +368,6 @@ const AdminResourcesPage = () => {
                                     name="type"
                                     value={formData.type}
                                     onChange={handleInputChange}
-                                    required
                                 >
                                     <option value="">Select type</option>
                                     <option value="LECTURE_HALL">Lecture Hall</option>
@@ -364,6 +375,7 @@ const AdminResourcesPage = () => {
                                     <option value="MEETING_ROOM">Meeting Room</option>
                                     <option value="EQUIPMENT">Equipment</option>
                                 </select>
+                                {formErrors.type && <small className="error-text">{formErrors.type}</small>}
                             </div>
 
                             {isSpaceResource && (
@@ -376,8 +388,8 @@ const AdminResourcesPage = () => {
                                         onChange={handleInputChange}
                                         placeholder="Enter capacity"
                                         min="1"
-                                        required
                                     />
+                                    {formErrors.capacity && <small className="error-text">{formErrors.capacity}</small>}
                                 </div>
                             )}
 
@@ -389,8 +401,8 @@ const AdminResourcesPage = () => {
                                     value={formData.location}
                                     onChange={handleInputChange}
                                     placeholder="Enter location"
-                                    required
                                 />
+                                {formErrors.location && <small className="error-text">{formErrors.location}</small>}
                             </div>
 
                             <div className="form-group">
@@ -400,8 +412,8 @@ const AdminResourcesPage = () => {
                                     name="availableFrom"
                                     value={formData.availableFrom}
                                     onChange={handleInputChange}
-                                    required
                                 />
+                                {formErrors.availableFrom && <small className="error-text">{formErrors.availableFrom}</small>}
                             </div>
 
                             <div className="form-group">
@@ -411,13 +423,8 @@ const AdminResourcesPage = () => {
                                     name="availableTo"
                                     value={formData.availableTo}
                                     onChange={handleInputChange}
-                                    required
                                 />
-                                {formData.availableFrom && formData.availableTo && !isTimeValid && (
-                                    <small className="error-text">
-                                        Available To must be later than Available From.
-                                    </small>
-                                )}
+                                {formErrors.availableTo && <small className="error-text">{formErrors.availableTo}</small>}
                             </div>
 
                             <div className="form-group full-width">
@@ -442,7 +449,7 @@ const AdminResourcesPage = () => {
                                 <button
                                     type="submit"
                                     className="submit-btn"
-                                    disabled={submitting || !isFormValid}
+                                    disabled={submitting}
                                 >
                                     {submitting
                                         ? editingResourceId
