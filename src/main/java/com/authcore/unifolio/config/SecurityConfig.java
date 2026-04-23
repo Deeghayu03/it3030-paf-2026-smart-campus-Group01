@@ -52,6 +52,9 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/technician/**").hasAnyRole("ADMIN", "TECHNICIAN")
+                .requestMatchers("/api/bookings/my").authenticated()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/bookings").hasRole("ADMIN")
+                .requestMatchers("/api/bookings/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions

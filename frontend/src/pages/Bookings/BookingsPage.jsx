@@ -84,11 +84,18 @@ const BookingsPage = () => {
     if (!silent) setLoading(true);
     try {
       const response = await getMyBookings();
-      console.log("My Bookings:", response.data);
+      console.log("My Bookings fetched:", response.data);
       setBookings(response.data);
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      setMessage({ type: 'error', text: 'Failed to load bookings' });
+      console.error("FETCH_MY_BOOKINGS_ERROR:", err.response?.data || err.message);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+      if (err.response?.status === 403) {
+        setMessage({ type: 'error', text: 'Access denied: You can only view your own bookings.' });
+      } else if (err.response?.status === 401) {
+        setMessage({ type: 'error', text: 'Authentication failed: Please sign in again.' });
+      } else {
+        setMessage({ type: 'error', text: `Failed to load your bookings: ${errorMsg}` });
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -99,10 +106,17 @@ const BookingsPage = () => {
     try {
       const response = await getAllBookings();
       setAdminBookings(response.data);
-      console.log("ADMIN BOOKINGS DATA:", response.data);
+      console.log("Admin Bookings fetched:", response.data);
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      setMessage({ type: 'error', text: 'Failed to load bookings' });
+      console.error("FETCH_ADMIN_BOOKINGS_ERROR:", err.response?.data || err.message);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+      if (err.response?.status === 403) {
+        setMessage({ type: 'error', text: 'Admin access required to view all bookings.' });
+      } else if (err.response?.status === 401) {
+        setMessage({ type: 'error', text: 'Session expired: Please login again.' });
+      } else {
+        setMessage({ type: 'error', text: `Failed to load administration booking data: ${errorMsg}` });
+      }
     } finally {
       if (!silent) setLoading(false);
     }

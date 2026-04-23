@@ -45,7 +45,7 @@ public class BookingController {
     }
 
     // ❗ ADMIN: Get ALL bookings
-    @GetMapping("/all")
+    @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllBookings() {
         return ResponseEntity.ok(bookingService.getAllBookings());
