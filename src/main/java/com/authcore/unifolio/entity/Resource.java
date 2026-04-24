@@ -46,8 +46,6 @@ public class Resource {
     }
 
     public enum ResourceStatus {
-        ACTIVE,
-        UNDER_MAINTENANCE,
-        OUT_OF_SERVICE
+        ACTIVE, OUT_OF_SERVICE, UNDER_MAINTENANCE
     }
 }
