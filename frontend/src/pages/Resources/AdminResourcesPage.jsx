@@ -309,7 +309,7 @@ const AdminResourcesPage = () => {
     };
 
     return (
-        <DashboardLayout title="Admin Resources" notificationCount={0}>
+        <>
             <div className="resources-page">
                 <div className={`toast-notification ${toast.show ? 'toast-show' : ''}`}>
                     <div className="toast-icon">
@@ -634,7 +634,7 @@ const AdminResourcesPage = () => {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </>
     );
 };
 

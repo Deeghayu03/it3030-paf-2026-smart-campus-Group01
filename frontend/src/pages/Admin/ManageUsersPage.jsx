@@ -234,7 +234,7 @@ const ManageUsersPage = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

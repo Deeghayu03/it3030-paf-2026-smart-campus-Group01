@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import { getResources } from '../../services/resourceService';
 import { ROUTES } from '../../constants/routes';
+import profileImage from '../../assets/images/profile.png';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -37,32 +37,57 @@ const DashboardPage = () => {
   }, []);
 
   return (
-      <DashboardLayout title="Student Dashboard" notificationCount={2}>
-        <div className="dashboard-page">
+    <div className="content-container">
+      <div className="page">
+        <div className="page-body">
           <section
               className="welcome-banner"
               style={{
-                background: 'linear-gradient(135deg, #ecfeff 0%, #dbeafe 100%)',
+                background: 'linear-gradient(135deg, #dff2eb 0%, #b7e4c7 60%, #d8f3dc 100%)',
+                boxShadow: '0 4px 20px rgba(82, 183, 136, 0.15)',
+                borderRadius: '16px',
+                padding: '32px',
+                borderLeft: '5px solid #52B788',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '32px',
+                width: '100%'
               }}
           >
-            <div className="welcome-content">
-              <h2>Hello, {studentName}!</h2>
-              <p>
+            <div className="welcome-content" style={{ flex: 1 }}>
+              <h2 style={{ color: '#1B4332', fontSize: '2rem', marginBottom: '8px', fontWeight: '700' }}>
+                Hello, {studentName}!
+              </h2>
+              <p style={{ color: '#2D6A4F', fontSize: '1.1rem', maxWidth: '600px', lineHeight: '1.5' }}>
                 Book resources, check your requests, and follow up on maintenance
                 issues from here.
               </p>
             </div>
 
-            <div className="welcome-visual">
-              <div className="abstract-art-small">
-                <div className="circle-1"></div>
-                <div className="circle-2"></div>
-                <div className="rect-1"></div>
-              </div>
+            <div className="welcome-image" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+              <img 
+                src={profileImage} 
+                alt="Hero" 
+                style={{ 
+                  height: '220px', 
+                  width: 'auto', 
+                  objectFit: 'contain',
+                  mixBlendMode: 'multiply',
+                  opacity: '0.9'
+                }} 
+              />
             </div>
           </section>
 
-          <section className="stats-section">
+          <section 
+            className="stats-section"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '24px'
+            }}
+          >
             <div className="stat-card" style={{ borderTopColor: '#2563EB' }}>
               <div className="stat-header">
                 <div className="stat-icon-circle" style={{ backgroundColor: '#2563EB' }}>
@@ -108,9 +133,16 @@ const DashboardPage = () => {
             </div>
           </section>
 
-          <h3 className="section-title">Quick Actions</h3>
+          <h3 className="section-title" style={{ marginTop: '32px' }}>Quick Actions</h3>
 
-          <section className="modules-section">
+          <section 
+            className="modules-section"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '24px'
+            }}
+          >
             <div className="module-card" style={{ borderTopColor: '#2563EB' }}>
               <div
                   className="module-icon-large"
@@ -169,7 +201,8 @@ const DashboardPage = () => {
             </div>
           </section>
         </div>
-      </DashboardLayout>
+      </div>
+    </div>
   );
 };
 

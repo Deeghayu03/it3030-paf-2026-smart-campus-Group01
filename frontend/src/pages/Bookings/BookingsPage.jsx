@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from 'react';
-import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import BookingCard from '../../components/ui/BookingCard';
 import BookingForm from '../../components/ui/BookingForm';
 import ConflictResolution from '../../components/ui/ConflictResolution';
@@ -270,15 +269,24 @@ const BookingsPage = () => {
   };
 
   return (
-    <DashboardLayout title="Bookings">
+    <div className="bookings-page-wrapper">
         <div className="bookings-page-container">
         <div className="bookings-header">
           <div className="header-left">
             <div className="header-title-section">
-              <h1>{showForm ? (isEditing ? 'Edit Booking' : 'Create New Booking') : (viewMode === 'admin' ? 'Booking Management' : 'Your Reservations')}</h1>
+              {/* Show title only for Admin Panel or when in Form mode */}
+              {showForm && (
+                <h1>{isEditing ? 'Edit Booking' : 'Create New Booking'}</h1>
+              )}
+              
               {!showForm && (
-                <p className="header-subtitle">
-                  {viewMode === 'admin' ? 'Review and manage all booking requests' : 'View and manage your upcoming bookings'}
+                <p 
+                  className="header-subtitle"
+                  style={viewMode === 'user' ? { fontSize: '1.15rem', fontWeight: '500', color: '#4b5563', marginTop: '4px' } : {}}
+                >
+                  {viewMode === 'admin' 
+                    ? 'Review and manage all booking requests' 
+                    : 'Easily view, manage, and track all your upcoming bookings in one place.'}
                 </p>
               )}
             </div>
@@ -553,7 +561,7 @@ const BookingsPage = () => {
         }}
         isAdmin={role === 'ADMIN' && viewMode === 'admin'}
       />
-    </DashboardLayout>
+    </div>
   );
 };
 

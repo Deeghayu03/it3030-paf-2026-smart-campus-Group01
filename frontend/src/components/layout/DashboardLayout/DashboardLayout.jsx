@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, CalendarCheck, Ticket } from 'lucide-react';
 import { ROUTES } from '../../../constants/routes';
 import useAuth from '../../../hooks/useAuth';
 import NotificationBell from "../../common/NotificationBell/NotificationBell";
@@ -25,10 +26,15 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
           ? 'Technician Portal'
           : 'Student Portal';
 
+  const location = useLocation();
+
+
   const handleLogout = () => {
     logout();
     navigate(ROUTES.LOGIN);
   };
+  
+  const isStudent = !isAdmin && !isTechnician;
 
   const adminNavItems = [
     { path: ROUTES.ADMIN_DASHBOARD, label: 'Dashboard', icon: 'D', color: '#52B788' },
@@ -62,9 +68,35 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
+  const getTitle = (pathname) => {
+    // Technician
+    if (pathname.includes("/technician/dashboard")) return "Technician Dashboard";
+    if (pathname.includes("/technician/resources")) return "Resource Management";
+    if (pathname.includes("/technician/tickets")) return "Assigned Tickets";
+    if (pathname.includes("/technician/notifications")) return "Notifications";
+
+    // Student
+    if (pathname === "/dashboard") return "Student Dashboard";
+    if (pathname === "/resources") return "Resource Management";
+    if (pathname === "/bookings") return "My Bookings";
+    if (pathname === "/tickets") return "My Tickets";
+    if (pathname === "/notifications") return "Notifications";
+
+    // Admin
+    if (pathname === "/admin/dashboard") return "Admin Dashboard";
+    if (pathname === "/admin/users") return "Manage Users";
+    if (pathname === "/admin/resources") return "Resource Management";
+    if (pathname === "/admin/bookings") return "Booking Management";
+    if (pathname === "/admin/tickets") return "Ticket Management";
+
+    return "";
+  };
+
+  const currentTitle = getTitle(location.pathname);
+
   return (
     <div className="dashboard-wrapper">
-      <aside className={`dashboard-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+      <aside className={`dashboard-sidebar ${isStudent ? 'student-portal' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-brand">
           <img src={logo} alt="UniFolio Logo" className="sidebar-logo" />
           <span className="logo-text">UniFolio</span>
@@ -85,7 +117,11 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
               }
             >
               <div className="icon-circle" style={{ backgroundColor: item.color }}>
-                {item.icon}
+                {typeof item.icon === 'string' ? (
+                  item.icon
+                ) : (
+                  <item.icon size={18} strokeWidth={2.5} />
+                )}
               </div>
               <span className="sidebar-label">{item.label}</span>
             </NavLink>
@@ -119,11 +155,16 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
             >
               ☰
             </button>
-            <h1 className="page-title">{title}</h1>
+
+            <h2 className="topbar-page-title">{currentTitle}</h2>
           </div>
 
           <div className="navbar-right">
-            <span className="student-portal-text">{portalText}</span>
+            {location.pathname.startsWith("/technician") ? (
+              <span className="portal-badge technician">Technician Portal</span>
+            ) : !isAdmin && (
+              <span className="portal-badge student">Student Portal</span>
+            )}
             <NotificationBell />
           </div>
         </header>

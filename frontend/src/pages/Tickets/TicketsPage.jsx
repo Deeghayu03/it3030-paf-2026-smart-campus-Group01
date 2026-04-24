@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import api from '../../api/axiosConfig';
 import ticketService from '../../services/ticketService';
 import './TicketsPage.css';
@@ -302,10 +301,9 @@ const TicketsPage = () => {
   };
 
   return (
-    <DashboardLayout title="My Tickets">
+    <div className="tickets-page-wrapper">
       <div className="tickets-container">
         <div className="tickets-header">
-          <h2 className="tickets-title">My Tickets</h2>
           <p className="tickets-subtitle">Create and track your maintenance requests</p>
           <button 
             className="create-ticket-btn"
@@ -671,7 +669,7 @@ const TicketsPage = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

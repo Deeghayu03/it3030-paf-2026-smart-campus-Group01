@@ -125,7 +125,7 @@ const NotificationsPage = () => {
   };
 
   return (
-    <DashboardLayout title="Notifications">
+    <>
       <div className="notifications-page">
 
         {role === 'STUDENT' && <div className="preferences-section">
@@ -222,7 +222,7 @@ const NotificationsPage = () => {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

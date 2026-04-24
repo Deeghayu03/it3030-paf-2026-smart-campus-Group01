@@ -231,7 +231,16 @@
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+}
+
+.topbar-page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0;
+  padding: 0;
 }
 
 .hamburger-btn {
@@ -243,28 +252,77 @@
   cursor: pointer;
 }
 
-.page-title {
-  font-size: 1.25rem;
+.portal-badge {
+  margin-left: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.portal-badge.student {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.portal-badge.technician {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 .navbar-right {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.student-portal-text {
-  color: var(--primary); /* #2D6A4F via var */
-  font-weight: 600;
-  font-size: 1rem;
+  margin-left: auto;
 }
 
 .dashboard-content {
-  padding: 24px;
   flex: 1;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.content-container {
+  max-width: 100%;
+  width: 100%;
+  padding: 24px;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.page-header p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .mobile-overlay {
@@ -309,4 +367,68 @@
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 90;
   }
+}/* OPTIMIZED PURE CSS HOVER FOR STUDENT PORTAL */
+.dashboard-sidebar.student-portal {
+  width: 64px !important;
+  min-width: 64px !important;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: width;
 }
+
+.dashboard-sidebar.student-portal:hover {
+  width: 240px !important;
+  min-width: 240px !important;
+  transition-delay: 0s !important;
+}
+
+/* Sync sidebar label visibility without delays */
+.student-portal .sidebar-label,
+.student-portal .logo-text {
+  transition: opacity 0.2s ease !important;
+  opacity: 0;
+}
+
+.student-portal:hover .sidebar-label,
+.student-portal:hover .logo-text {
+  opacity: 1;
+  transition-delay: 0.05s !important;
+}
+
+/* Optimize main content shifting */
+.student-portal ~ .dashboard-main {
+  margin-left: 64px !important;
+  width: calc(100% - 64px) !important;
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: margin-left;
+}
+
+.student-portal:hover ~ .dashboard-main {
+  margin-left: 240px !important;
+  width: calc(100% - 240px) !important;
+  transition-delay: 0s !important;
+}
+
+/* Dashboard Hero Responsiveness */
+@media (max-width: 768px) {
+  .welcome-banner {
+    flex-direction: column !important;
+    text-align: center;
+    padding: 24px !important;
+  }
+
+  .welcome-content {
+    margin-bottom: 24px;
+    width: 100%;
+  }
+
+  .welcome-image {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .welcome-image img {
+    height: 180px !important;
+    margin-top: 16px;
+  }
+}
+

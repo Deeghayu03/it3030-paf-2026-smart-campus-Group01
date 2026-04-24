@@ -108,7 +108,7 @@ const AdminTicketsPage = () => {
   });
 
   return (
-    <DashboardLayout title="Admin Tickets Dashboard">
+    <>
       <div className="admin-tickets-container">
         <h1 className="page-title">Manage Support Tickets</h1>
         
@@ -296,7 +296,7 @@ const AdminTicketsPage = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
