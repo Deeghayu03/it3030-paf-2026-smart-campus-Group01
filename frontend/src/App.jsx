@@ -12,12 +12,14 @@ import BookingsPage from './pages/Bookings/BookingsPage';
 import TicketsPage from './pages/Tickets/TicketsPage';
 import NotificationsPage from './pages/Notifications/NotificationsPage';
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
+import AdminTicketsPage from './pages/Admin/AdminTicketsPage';
 import ManageUsersPage from './pages/Admin/ManageUsersPage';
 import OAuth2CallbackPage from './pages/Auth/OAuth2CallbackPage';
 import CompleteProfilePage from './pages/Auth/CompleteProfilePage';
 import AdminResourcesPage from './pages/Resources/AdminResourcesPage';
 import TechnicianDashboardPage from './pages/Technician/TechnicianDashboardPage';
 import TechnicianResourcesPage from './pages/Technician/TechnicianResourcesPage';
+import TechnicianTicketsPage from './pages/Technician/TechnicianTicketsPage';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -48,7 +50,7 @@ const App = () => {
           <Route path={ROUTES.ADMIN_USERS} element={<ProtectedRoute><ManageUsersPage /></ProtectedRoute>} />
           <Route path={ROUTES.ADMIN_RESOURCES} element={<ProtectedRoute><AdminResourcesPage /></ProtectedRoute>} />
           <Route path={ROUTES.ADMIN_BOOKINGS} element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
-          <Route path={ROUTES.ADMIN_TICKETS} element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
+          <Route path={ROUTES.ADMIN_TICKETS} element={<ProtectedRoute><AdminTicketsPage /></ProtectedRoute>} />
           <Route path={ROUTES.ADMIN_NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
             <Route
@@ -63,7 +65,7 @@ const App = () => {
                 path={ROUTES.TECHNICIAN_TICKETS}
                 element={
                   <ProtectedRoute>
-                    <TicketsPage />
+                    <TechnicianTicketsPage />
                   </ProtectedRoute>
                 }
             />

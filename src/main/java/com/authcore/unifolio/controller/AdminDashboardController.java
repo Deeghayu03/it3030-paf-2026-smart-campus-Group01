@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -107,5 +108,48 @@ public class AdminDashboardController {
         studentRepository.findByUserId(id).ifPresent(studentRepository::delete);
         userRepository.delete(user);
         return ResponseEntity.noContent().build();
+    }
+    @GetMapping("/analytics")
+    public ResponseEntity<Map<String, Object>> getUsageAnalytics() {
+        Map<String, Object> analytics = new HashMap<>();
+
+        List<Map<String, Object>> topResources = new ArrayList<>();
+        List<Object[]> resourceData = bookingRepository.findTopResources();
+
+        for (Object[] row : resourceData) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("name", row[0]);
+            entry.put("value", row[1]);
+            topResources.add(entry);
+        }
+
+        List<Map<String, Object>> peakBookingHours = new ArrayList<>();
+        List<Object[]> hourData = bookingRepository.findPeakBookingHours();
+
+        for (Object[] row : hourData) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("hour", row[0] + ":00");
+            entry.put("value", row[1]);
+            peakBookingHours.add(entry);
+        }
+
+        analytics.put("topResources", topResources);
+        analytics.put("peakBookingHours", peakBookingHours);
+
+        return ResponseEntity.ok(analytics);
+    }
+
+    @GetMapping("/technicians")
+    public ResponseEntity<?> getTechnicians() {
+        List<User> technicians = userRepository.findByRole(User.Role.TECHNICIAN);
+        List<Map<String, Object>> result = technicians.stream()
+            .map(t -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("email", t.getEmail());
+                map.put("name", t.getName() != null ? t.getName() : t.getEmail());
+                return map;
+            })
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 }
