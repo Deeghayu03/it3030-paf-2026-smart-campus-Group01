@@ -260,3 +260,62 @@
     padding-top: 1rem;
     border-top: 1px solid #e5e7eb;
 }
+
+/* Tabs */
+.admin-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: #374151;
+}
+
+.tab-btn.active {
+    color: var(--primary, #52B788);
+    border-bottom: 3px solid var(--primary, #52B788);
+}
+
+/* Inline Notes */
+.tech-notes-cell {
+    max-width: 250px;
+    font-size: 0.85rem;
+}
+
+.inline-note {
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+.inline-note.res-note {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.inline-note.rej-note {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.text-muted {
+    color: #9ca3af;
+}
