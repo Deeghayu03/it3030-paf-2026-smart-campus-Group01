@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -136,5 +137,19 @@ public class AdminDashboardController {
         analytics.put("peakBookingHours", peakBookingHours);
 
         return ResponseEntity.ok(analytics);
+    }
+
+    @GetMapping("/technicians")
+    public ResponseEntity<?> getTechnicians() {
+        List<User> technicians = userRepository.findByRole(User.Role.TECHNICIAN);
+        List<Map<String, Object>> result = technicians.stream()
+            .map(t -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("email", t.getEmail());
+                map.put("name", t.getName() != null ? t.getName() : t.getEmail());
+                return map;
+            })
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 }
