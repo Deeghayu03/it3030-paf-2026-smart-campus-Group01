@@ -3,6 +3,7 @@ package com.authcore.unifolio.service;
 import com.authcore.unifolio.entity.Notification;
 import com.authcore.unifolio.entity.User;
 import com.authcore.unifolio.repo.NotificationRepository;
+import com.authcore.unifolio.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,9 @@ public class NotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public void createNotification(User user, String message,
             Notification.NotificationType type, 
             Long referenceId, String referenceType) {
@@ -23,35 +27,35 @@ public class NotificationService {
         notification.setType(type);
         notification.setReferenceId(referenceId);
         notification.setReferenceType(referenceType);
-        notification.setRead(false);
+        notification.setIsRead(false);
         notificationRepository.save(notification);
     }
 
     public List<Notification> getMyNotifications(String email) {
-        User user = new User();
-        user.setEmail(email);
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
         return notificationRepository
             .findByUserOrderByCreatedAtDesc(user);
     }
 
     public long getUnreadCount(String email) {
         return notificationRepository
-            .countByUserEmailAndIsRead(email, false);
+            .countByUserEmailAndIsRead(email, Boolean.FALSE);
     }
 
     public void markAsRead(Long notificationId) {
         notificationRepository.findById(notificationId)
             .ifPresent(n -> {
-                n.setRead(true);
+                n.setIsRead(true);
                 notificationRepository.save(n);
             });
     }
 
     public void markAllAsRead(String email) {
-        List<Notification> notifications = 
+        List<Notification> notifications =
             notificationRepository
-                .findByUserEmailAndIsRead(email, false);
-        notifications.forEach(n -> n.setRead(true));
+                .findByUserEmailAndIsRead(email, Boolean.FALSE);
+        notifications.forEach(n -> n.setIsRead(true));
         notificationRepository.saveAll(notifications);
     }
 }

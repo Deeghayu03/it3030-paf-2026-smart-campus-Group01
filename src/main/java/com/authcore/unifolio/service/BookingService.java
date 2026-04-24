@@ -3,6 +3,7 @@ package com.authcore.unifolio.service;
 import com.authcore.unifolio.dto.BookingRequestDTO;
 import com.authcore.unifolio.dto.BookingResponseDTO;
 import com.authcore.unifolio.entity.Booking;
+import com.authcore.unifolio.entity.Notification;
 import com.authcore.unifolio.entity.Resource;
 import com.authcore.unifolio.entity.User;
 import com.authcore.unifolio.exception.ConflictException;
@@ -10,6 +11,7 @@ import com.authcore.unifolio.repo.BookingRepository;
 import com.authcore.unifolio.repo.ResourceRepository;
 import com.authcore.unifolio.repo.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +34,9 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ResourceRepository resourceRepository;
     private final UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     public BookingResponseDTO createBooking(BookingRequestDTO request) {
         User currentUser = getCurrentUser();
@@ -87,7 +92,25 @@ public class BookingService {
             booking.setIsAdminBooking(false);
         }
 
-        return mapToResponseDTO(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // NOTIFICATION TRIGGER 1: Notify all admins of new booking request
+        List<User> admins = userRepository.findByRole(User.Role.ADMIN);
+        String resourceName = savedBooking.getResource().getName();
+        String studentName = savedBooking.getUser().getName() != null
+                ? savedBooking.getUser().getName()
+                : savedBooking.getUser().getEmail();
+        for (User admin : admins) {
+            notificationService.createNotification(
+                    admin,
+                    "New booking request from " + studentName + " for " + resourceName,
+                    Notification.NotificationType.BOOKING_PENDING,
+                    savedBooking.getId(),
+                    "BOOKING"
+            );
+        }
+
+        return mapToResponseDTO(savedBooking);
     }
 
     public boolean checkConflict(Long resourceId, LocalDate date, LocalTime start, LocalTime end, Long excludeId) {
@@ -228,7 +251,21 @@ public class BookingService {
         }
         
         booking.setStatus(Booking.BookingStatus.APPROVED);
-        return mapToResponseDTO(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // NOTIFICATION TRIGGER 2: Notify the student their booking was approved
+        User student = savedBooking.getUser();
+        String resourceName = savedBooking.getResource().getName();
+        String bookingDate = savedBooking.getBookingDate().toString();
+        notificationService.createNotification(
+                student,
+                "Your booking for " + resourceName + " on " + bookingDate + " has been approved!",
+                Notification.NotificationType.BOOKING_APPROVED,
+                savedBooking.getId(),
+                "BOOKING"
+        );
+
+        return mapToResponseDTO(savedBooking);
     }
 
     public BookingResponseDTO rejectBooking(Long id, String reason) {
@@ -246,7 +283,23 @@ public class BookingService {
         booking.setStatus(Booking.BookingStatus.REJECTED);
         booking.setRejectionReason(reason);
         booking.setRejectedReason(reason); // Setting both for compatibility
-        return mapToResponseDTO(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // NOTIFICATION TRIGGER 3: Notify the student their booking was rejected
+        User student = savedBooking.getUser();
+        String resourceName = savedBooking.getResource().getName();
+        String rejectionReason = savedBooking.getRejectedReason() != null
+                ? savedBooking.getRejectedReason()
+                : reason;
+        notificationService.createNotification(
+                student,
+                "Your booking for " + resourceName + " was rejected. Reason: " + rejectionReason,
+                Notification.NotificationType.BOOKING_REJECTED,
+                savedBooking.getId(),
+                "BOOKING"
+        );
+
+        return mapToResponseDTO(savedBooking);
     }
 
     // 5. FIX SUGGESTION LOGIC EDGE CASE

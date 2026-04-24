@@ -36,14 +36,12 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
     { path: ROUTES.ADMIN_RESOURCES, label: 'Resources', icon: 'R', color: '#4CAF50' },
     { path: ROUTES.ADMIN_BOOKINGS, label: 'Bookings', icon: 'B', color: '#2196F3' },
     { path: ROUTES.ADMIN_TICKETS, label: 'Tickets', icon: 'T', color: '#FF9800' },
-    { path: ROUTES.ADMIN_NOTIFICATIONS, label: 'Notifications', icon: 'N', color: '#9C27B0' },
   ];
 
   const technicianNavItems = [
     { path: ROUTES.TECHNICIAN_DASHBOARD, label: 'Dashboard', icon: 'D', color: '#52B788' },
     { path: ROUTES.TECHNICIAN_RESOURCES, label: 'Resources', icon: 'R', color: '#4CAF50' },
     { path: ROUTES.TECHNICIAN_TICKETS, label: 'Assigned Tickets', icon: 'T', color: '#FF9800' },
-    { path: ROUTES.TECHNICIAN_NOTIFICATIONS, label: 'Notifications', icon: 'N', color: '#9C27B0' },
   ];
 
   const studentNavItems = [
@@ -51,7 +49,6 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
     { path: ROUTES.RESOURCES, label: 'Resources', icon: 'R', color: '#4CAF50' },
     { path: ROUTES.BOOKINGS, label: 'Bookings', icon: 'B', color: '#2196F3' },
     { path: ROUTES.TICKETS, label: 'Maintenance', icon: 'M', color: '#FF9800' },
-    { path: ROUTES.NOTIFICATIONS, label: 'Notifications', icon: 'N', color: '#9C27B0' },
   ];
 
   const navItems = isAdmin
