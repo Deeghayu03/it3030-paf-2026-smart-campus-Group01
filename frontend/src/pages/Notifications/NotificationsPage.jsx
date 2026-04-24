@@ -57,6 +57,7 @@ const NotificationsPage = () => {
       case 'TICKET_UPDATED': return '#2196F3';
       case 'TICKET_ASSIGNED': return '#9C27B0';
       case 'TICKET_RESOLVED': return '#52B788';
+      case 'TICKET_REJECTED': return '#DC2626';
       case 'NEW_COMMENT': return '#FF9800';
       default: return 'var(--primary)';
     }
