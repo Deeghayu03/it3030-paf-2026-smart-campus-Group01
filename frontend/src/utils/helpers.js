@@ -13,6 +13,12 @@ export const capitalizeFirst = (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+export const formatRole = (role) => {
+  if (role === "ADMIN") return "Admin";
+  if (role === "STUDENT" || role === "USER") return "Student";
+  return role;
+};
+
 export const truncateText = (text, maxLength) => {
   if (!text) return '';
   if (text.length <= maxLength) return text;

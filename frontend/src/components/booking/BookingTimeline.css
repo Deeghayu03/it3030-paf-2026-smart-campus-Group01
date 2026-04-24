@@ -1,0 +1,65 @@
+.timeline {
+  padding: 15px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Optional: add a vertical line between dots */
+.timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 22px;
+  bottom: -15px;
+  width: 2px;
+  background: #e5e7eb;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.dot.blue { background: #3b82f6; box-shadow: 0 0 0 3px #dbeafe; }
+.dot.green { background: #10b981; box-shadow: 0 0 0 3px #d1fae5; }
+.dot.red { background: #ef4444; box-shadow: 0 0 0 3px #fee2e2; }
+.dot.gray { background: #6b7280; box-shadow: 0 0 0 3px #f3f4f6; }
+
+.timeline-item div p {
+  margin: 2px 0 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.timeline-item div strong {
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.reason {
+  margin-top: 5px !important;
+  color: #ef4444 !important;
+  font-weight: 500;
+}
+
+.cancelled-by {
+  font-size: 13px;
+  color: #555;
+  margin-top: 4px;
+}

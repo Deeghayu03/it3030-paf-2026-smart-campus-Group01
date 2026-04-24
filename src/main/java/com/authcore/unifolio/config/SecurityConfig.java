@@ -55,13 +55,20 @@ public class SecurityConfig {
                 .requestMatchers("/api/bookings/my").authenticated()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/bookings").hasRole("ADMIN")
                 .requestMatchers("/api/bookings/**").authenticated()
+                .requestMatchers("/api/resources", "/api/resources/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint((request, response, authException) -> {
-                    response.setContentType("application/json");
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                    String requestUri = request.getRequestURI();
+                    if (requestUri.startsWith("/api/")) {
+                        response.setContentType("application/json");
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \""
+                            + authException.getMessage() + "\"}");
+                    } else {
+                        response.sendRedirect("/oauth2/authorization/google");
+                    }
                 })
             )
             .sessionManagement(session -> session

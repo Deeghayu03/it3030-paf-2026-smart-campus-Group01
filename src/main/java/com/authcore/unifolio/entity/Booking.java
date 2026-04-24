@@ -38,12 +38,16 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     private BookingStatus status;
 
-    private String rejectionReason; // Existing - might be used by old code
-    private String rejectedReason;  // New requirement
-    private String cancellationReason; // New requirement
+    private String rejectionReason;
+    private String rejectedReason;
+    private String cancellationReason;
+    private String cancelledBy;
     private Boolean isAdminBooking = false;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime approvedAt;
+    private LocalDateTime rejectedAt;
+    private LocalDateTime cancelledAt;
 
     public enum BookingStatus {
         PENDING, APPROVED, REJECTED, CANCELLED

@@ -26,4 +26,19 @@ public interface ResourceRepository extends JpaRepository<Resource, Long> {
             String location,
             Integer capacity
     );
+
+    List<Resource> findByStatus(Resource.ResourceStatus status);
+
+    List<Resource> findByTypeAndStatus(Resource.ResourceType type, Resource.ResourceStatus status);
+
+    List<Resource> findByLocationContainingIgnoreCaseAndStatus(String location, Resource.ResourceStatus status);
+
+    List<Resource> findByCapacityGreaterThanEqualAndStatus(Integer capacity, Resource.ResourceStatus status);
+
+    List<Resource> findByTypeAndLocationContainingIgnoreCaseAndCapacityGreaterThanEqualAndStatus(
+            Resource.ResourceType type,
+            String location,
+            Integer capacity,
+            Resource.ResourceStatus status
+    );
 }

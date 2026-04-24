@@ -1,11 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
+import api from '../../api/axiosConfig';
 import {
     getResources,
     deleteResource,
     createResource,
     updateResource
 } from '../../services/resourceService';
+import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { formatTime } from '../../utils/timeFormatter';
 import '../Dashboard/DashboardPage.css';
 import './ResourcesPage.css';
 
@@ -16,14 +21,16 @@ const AdminResourcesPage = () => {
     const [showForm, setShowForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const [toast, setToast] = useState({ show: false, name: '' });
     const [editingResourceId, setEditingResourceId] = useState(null);
+    const [resourceToDelete, setResourceToDelete] = useState(null);
+    const [formErrors, setFormErrors] = useState({});
 
     const [filters, setFilters] = useState({
-        location: '',
+        search: '',
         type: '',
-        status: ''
+        status: '',
+        minCapacity: ''
     });
 
     const [formData, setFormData] = useState({
@@ -36,6 +43,29 @@ const AdminResourcesPage = () => {
         description: ''
     });
 
+    const isSpaceResource =
+        formData.type === 'LECTURE_HALL' ||
+        formData.type === 'LAB' ||
+        formData.type === 'MEETING_ROOM';
+
+    const isTimeValid =
+        formData.availableFrom !== '' &&
+        formData.availableTo !== '' &&
+        formData.availableFrom < formData.availableTo;
+
+    const validate = () => {
+        const errors = {};
+        if (!formData.name.trim()) errors.name = 'Name is required';
+        if (!formData.type) errors.type = 'Type is required';
+        if (!formData.location.trim()) errors.location = 'Location is required';
+        if (isSpaceResource && !formData.capacity) errors.capacity = 'Capacity is required';
+        if (!formData.availableFrom) errors.availableFrom = 'Available From is required';
+        if (!formData.availableTo) errors.availableTo = 'Available To is required';
+        if (formData.availableFrom && formData.availableTo && !isTimeValid)
+            errors.availableTo = 'Available To must be later than Available From';
+        return errors;
+    };
+
     useEffect(() => {
         loadResources();
     }, []);
@@ -44,10 +74,19 @@ const AdminResourcesPage = () => {
         try {
             setLoading(true);
             setError('');
+            
+            console.log("API URL:", api.defaults.baseURL + "/resources");
             const response = await getResources();
-            setResources(response.data);
+            console.log("SUCCESS RESPONSE:", response);
+            console.log("RESPONSE DATA:", response.data);
+            
+            const data = response.data?.data || response.data?.resources || response.data;
+            const resourcesList = Array.isArray(data) ? data : [];
+            setResources(resourcesList);
         } catch (error) {
-            console.error('Failed to load resources:', error);
+            console.log("ERROR OBJECT:", error);
+            console.log("ERROR RESPONSE:", error.response);
+            console.log("ERROR DATA:", error.response?.data);
             setError('Failed to load resources. Please try again.');
         } finally {
             setLoading(false);
@@ -59,35 +98,108 @@ const AdminResourcesPage = () => {
         return type.replaceAll('_', ' ');
     };
 
+    const formatStatus = (status) => {
+        if (!status) return 'Not specified';
+        return status.replaceAll('_', ' ');
+    };
+
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters((prev) => ({ ...prev, [name]: value }));
     };
 
-    const filteredResources = resources.filter((r) =>
-        (!filters.location ||
-            r.location?.toLowerCase().includes(filters.location.toLowerCase())) &&
-        (!filters.type || r.type === filters.type) &&
-        (!filters.status || r.status === filters.status)
-    );
+    const clearFilters = () => {
+        setFilters({
+            search: '',
+            type: '',
+            status: '',
+            minCapacity: ''
+        });
+    };
+
+    const filteredResources = useMemo(() => {
+        return resources.filter((r) => {
+            const matchesSearch =
+                !filters.search ||
+                r.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+                r.location?.toLowerCase().includes(filters.search.toLowerCase());
+
+            const matchesType =
+                !filters.type || r.type === filters.type;
+
+            const matchesStatus =
+                !filters.status || r.status === filters.status;
+
+            const matchesCapacity =
+                filters.minCapacity === '' ||
+                (r.capacity ?? 0) >= Number(filters.minCapacity);
+
+            return matchesSearch && matchesType && matchesStatus && matchesCapacity;
+        });
+    }, [resources, filters]);
 
     const showToast = (name) => {
         setToast({ show: true, name });
         setTimeout(() => setToast({ show: false, name: '' }), 3200);
     };
 
-    const handleDelete = async (id) => {
-        const resource = resources.find((r) => r.id === id);
+    const confirmDelete = async () => {
+        if (!resourceToDelete) return;
+
         try {
-            await deleteResource(id);
-            setResources((prev) => prev.filter((r) => r.id !== id));
-            setConfirmDeleteId(null);
-            showToast(resource?.name || 'Resource');
+            await deleteResource(resourceToDelete.id);
+            setResources((prev) => prev.filter((r) => r.id !== resourceToDelete.id));
+            showToast(resourceToDelete.name || 'Resource');
+            setResourceToDelete(null);
         } catch (error) {
             console.error('Failed to delete resource:', error);
-            setConfirmDeleteId(null);
             alert('Failed to delete resource. Please try again.');
+            setResourceToDelete(null);
         }
+    };
+
+    const handleDownloadResourcePdf = (resource) => {
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text('Resource Details', 14, 20);
+
+        doc.setFontSize(11);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+
+        autoTable(doc, {
+            startY: 36,
+            head: [['Field', 'Value']],
+            body: [
+                ['ID', resource.id ?? ''],
+                ['Name', resource.name ?? ''],
+                ['Type', formatType(resource.type)],
+                ['Location', resource.location ?? ''],
+                ['Capacity', resource.capacity ?? '—'],
+                ['Available From', resource.availableFrom ?? ''],
+                ['Available To', resource.availableTo ?? ''],
+                ['Status', formatStatus(resource.status)],
+                ['Description', resource.description || '—']
+            ],
+            theme: 'grid',
+            headStyles: {
+                fillColor: [37, 99, 235]
+            },
+            styles: {
+                fontSize: 10,
+                cellPadding: 4
+            },
+            columnStyles: {
+                0: { cellWidth: 50 },
+                1: { cellWidth: 120 }
+            }
+        });
+
+        const safeFileName = (resource.name || 'resource')
+            .replace(/[^a-z0-9]/gi, '_')
+            .toLowerCase();
+
+        doc.save(`${safeFileName}_details.pdf`);
     };
 
     const handleInputChange = (e) => {
@@ -102,6 +214,9 @@ const AdminResourcesPage = () => {
         } else {
             setFormData((prev) => ({ ...prev, [name]: value }));
         }
+
+        // Clear the error for this field as user types
+        setFormErrors((prev) => ({ ...prev, [name]: '' }));
     };
 
     const resetForm = () => {
@@ -115,6 +230,7 @@ const AdminResourcesPage = () => {
             description: ''
         });
         setEditingResourceId(null);
+        setFormErrors({});
     };
 
     const closeForm = () => {
@@ -133,36 +249,20 @@ const AdminResourcesPage = () => {
             availableTo: resource.availableTo || '',
             description: resource.description || ''
         });
+        setFormErrors({});
         setShowForm(true);
-        setConfirmDeleteId(null);
+        setResourceToDelete(null);
     };
-
-    const isSpaceResource =
-        formData.type === 'LECTURE_HALL' ||
-        formData.type === 'LAB' ||
-        formData.type === 'MEETING_ROOM';
-
-    const isTimeValid =
-        formData.availableFrom !== '' &&
-        formData.availableTo !== '' &&
-        formData.availableFrom < formData.availableTo;
-
-    const isFormValid =
-        formData.name.trim() !== '' &&
-        formData.type !== '' &&
-        formData.location.trim() !== '' &&
-        formData.availableFrom !== '' &&
-        formData.availableTo !== '' &&
-        isTimeValid &&
-        (!isSpaceResource || formData.capacity !== '');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!isTimeValid) {
-            alert('Available To must be later than Available From.');
+        const errors = validate();
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
             return;
         }
+        setFormErrors({});
 
         try {
             setSubmitting(true);
@@ -174,7 +274,7 @@ const AdminResourcesPage = () => {
 
             if (editingResourceId) {
                 const response = await updateResource(editingResourceId, payload);
-                const updatedResource = response.data;
+                const updatedResource = response.data?.data || response.data?.resource || response.data;
 
                 setResources((prev) =>
                     prev.map((resource) =>
@@ -188,7 +288,7 @@ const AdminResourcesPage = () => {
                     ...payload,
                     status: 'ACTIVE'
                 });
-                const createdResource = response.data;
+                const createdResource = response.data?.data || response.data?.resource || response.data;
 
                 setResources((prev) => [createdResource, ...prev]);
                 setSuccessMessage('Resource created successfully');
@@ -269,8 +369,8 @@ const AdminResourcesPage = () => {
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     placeholder="Enter resource name"
-                                    required
                                 />
+                                {formErrors.name && <small className="error-text">{formErrors.name}</small>}
                             </div>
 
                             <div className="form-group">
@@ -279,7 +379,6 @@ const AdminResourcesPage = () => {
                                     name="type"
                                     value={formData.type}
                                     onChange={handleInputChange}
-                                    required
                                 >
                                     <option value="">Select type</option>
                                     <option value="LECTURE_HALL">Lecture Hall</option>
@@ -287,6 +386,7 @@ const AdminResourcesPage = () => {
                                     <option value="MEETING_ROOM">Meeting Room</option>
                                     <option value="EQUIPMENT">Equipment</option>
                                 </select>
+                                {formErrors.type && <small className="error-text">{formErrors.type}</small>}
                             </div>
 
                             {isSpaceResource && (
@@ -299,8 +399,8 @@ const AdminResourcesPage = () => {
                                         onChange={handleInputChange}
                                         placeholder="Enter capacity"
                                         min="1"
-                                        required
                                     />
+                                    {formErrors.capacity && <small className="error-text">{formErrors.capacity}</small>}
                                 </div>
                             )}
 
@@ -312,8 +412,8 @@ const AdminResourcesPage = () => {
                                     value={formData.location}
                                     onChange={handleInputChange}
                                     placeholder="Enter location"
-                                    required
                                 />
+                                {formErrors.location && <small className="error-text">{formErrors.location}</small>}
                             </div>
 
                             <div className="form-group">
@@ -323,8 +423,8 @@ const AdminResourcesPage = () => {
                                     name="availableFrom"
                                     value={formData.availableFrom}
                                     onChange={handleInputChange}
-                                    required
                                 />
+                                {formErrors.availableFrom && <small className="error-text">{formErrors.availableFrom}</small>}
                             </div>
 
                             <div className="form-group">
@@ -334,13 +434,8 @@ const AdminResourcesPage = () => {
                                     name="availableTo"
                                     value={formData.availableTo}
                                     onChange={handleInputChange}
-                                    required
                                 />
-                                {formData.availableFrom && formData.availableTo && !isTimeValid && (
-                                    <small className="error-text">
-                                        Available To must be later than Available From.
-                                    </small>
-                                )}
+                                {formErrors.availableTo && <small className="error-text">{formErrors.availableTo}</small>}
                             </div>
 
                             <div className="form-group full-width">
@@ -365,7 +460,7 @@ const AdminResourcesPage = () => {
                                 <button
                                     type="submit"
                                     className="submit-btn"
-                                    disabled={submitting || !isFormValid}
+                                    disabled={submitting}
                                 >
                                     {submitting
                                         ? editingResourceId
@@ -394,14 +489,15 @@ const AdminResourcesPage = () => {
 
                 {!loading && !error && (
                     <>
-                        <div className="resources-filters">
+                        <div className="resources-filters better-filters">
                             <input
                                 type="text"
-                                name="location"
-                                placeholder="Search by location..."
-                                value={filters.location}
+                                name="search"
+                                placeholder="Search by resource name or location..."
+                                value={filters.search}
                                 onChange={handleFilterChange}
                             />
+
                             <select name="type" value={filters.type} onChange={handleFilterChange}>
                                 <option value="">All types</option>
                                 <option value="LECTURE_HALL">Lecture Hall</option>
@@ -409,11 +505,30 @@ const AdminResourcesPage = () => {
                                 <option value="MEETING_ROOM">Meeting Room</option>
                                 <option value="EQUIPMENT">Equipment</option>
                             </select>
+
                             <select name="status" value={filters.status} onChange={handleFilterChange}>
                                 <option value="">All statuses</option>
                                 <option value="ACTIVE">Active</option>
+                                <option value="UNDER_MAINTENANCE">Under Maintenance</option>
                                 <option value="OUT_OF_SERVICE">Out of Service</option>
                             </select>
+
+                            <input
+                                type="number"
+                                name="minCapacity"
+                                placeholder="Min capacity"
+                                value={filters.minCapacity}
+                                onChange={handleFilterChange}
+                                min="1"
+                            />
+
+                            <button
+                                type="button"
+                                className="clear-filter-btn"
+                                onClick={clearFilters}
+                            >
+                                Clear
+                            </button>
                         </div>
 
                         <p className="resources-count">
@@ -435,63 +550,51 @@ const AdminResourcesPage = () => {
                                         <th>Capacity</th>
                                         <th>Available</th>
                                         <th>Status</th>
-                                        <th></th>
+                                        <th>Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     {filteredResources.map((resource) => (
                                         <tr key={resource.id}>
-                                            <td data-label="Name">{resource.name}</td>
+                                            <td data-label="Name">{resource.name || resource.resourceName}</td>
                                             <td data-label="Type">{formatType(resource.type)}</td>
                                             <td data-label="Location">{resource.location}</td>
                                             <td data-label="Capacity">{resource.capacity ?? '—'}</td>
                                             <td data-label="Available">
-                                                {resource.availableFrom} – {resource.availableTo}
+                                                {formatTime(resource.availableFrom)} – {formatTime(resource.availableTo)}
                                             </td>
                                             <td data-label="Status">
                                                     <span className={`status-badge ${resource.status?.toLowerCase()}`}>
-                                                        {resource.status}
+                                                        {formatStatus(resource.status)}
                                                     </span>
                                             </td>
                                             <td data-label="Actions">
-                                                {confirmDeleteId === resource.id ? (
-                                                    <div className="confirm-inline">
-                                                            <span className="confirm-text">
-                                                                Delete "{resource.name}"? This cannot be undone.
-                                                            </span>
-                                                        <button
-                                                            type="button"
-                                                            className="btn-yes"
-                                                            onClick={() => handleDelete(resource.id)}
-                                                        >
-                                                            Yes, delete
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="cancel-btn"
-                                                            onClick={() => setConfirmDeleteId(null)}
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="resource-actions">
-                                                        <button
-                                                            type="button"
-                                                            className="edit-btn"
-                                                            onClick={() => handleEditClick(resource)}
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="delete-btn"
-                                                            onClick={() => setConfirmDeleteId(resource.id)}
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                <div className="resource-actions">
+                                                    <button
+                                                        type="button"
+                                                        className="download-btn better-download-btn"
+                                                        onClick={() => handleDownloadResourcePdf(resource)}
+                                                        title="Download resource details as PDF"
+                                                    >
+                                                        <Download size={16} />
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="edit-btn better-edit-btn"
+                                                        onClick={() => handleEditClick(resource)}
+                                                    >
+                                                        Edit
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="delete-btn better-delete-btn"
+                                                        onClick={() => setResourceToDelete(resource)}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -500,6 +603,35 @@ const AdminResourcesPage = () => {
                             </div>
                         )}
                     </>
+                )}
+
+                {resourceToDelete && (
+                    <div className="delete-modal-overlay">
+                        <div className="delete-modal">
+                            <h3>Delete Resource</h3>
+                            <p>
+                                Are you sure you want to delete <strong>{resourceToDelete.name}</strong>?
+                            </p>
+                            <p className="delete-warning">This action cannot be undone.</p>
+
+                            <div className="delete-modal-actions">
+                                <button
+                                    type="button"
+                                    className="modal-no-btn"
+                                    onClick={() => setResourceToDelete(null)}
+                                >
+                                    No
+                                </button>
+                                <button
+                                    type="button"
+                                    className="modal-yes-btn"
+                                    onClick={confirmDelete}
+                                >
+                                    Yes, Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </DashboardLayout>

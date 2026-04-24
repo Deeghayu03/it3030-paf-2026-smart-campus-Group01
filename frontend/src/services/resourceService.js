@@ -1,4 +1,4 @@
-import axiosInstance from '../api/axiosConfig';
+import api from '../api/axiosConfig';
 
 export const getResources = (filters = {}) => {
   const params = {};
@@ -7,23 +7,23 @@ export const getResources = (filters = {}) => {
   if (filters.location) params.location = filters.location;
   if (filters.minCapacity) params.minCapacity = filters.minCapacity;
 
-  return axiosInstance.get('/resources', { params });
+  return api.get('/resources', { params });
 };
 
 export const getResourceById = (id) => {
-  return axiosInstance.get(`/resources/${id}`);
+  return api.get(`/resources/${id}`);
 };
 
 export const createResource = (resourceData) => {
-  return axiosInstance.post('/resources', resourceData);
+  return api.post('/resources', resourceData);
 };
 
 export const updateResource = (id, resourceData) => {
-  return axiosInstance.put(`/resources/${id}`, resourceData);
+  return api.put(`/resources/${id}`, resourceData);
 };
 
 export const deleteResource = (id) => {
-  return axiosInstance.delete(`/resources/${id}`);
+  return api.delete(`/resources/${id}`);
 };
 
 const resourceService = {
