@@ -1,0 +1,2 @@
+ALTER TABLE students DROP COLUMN IF EXISTS email;
+ALTER TABLE students DROP COLUMN IF EXISTS password;
