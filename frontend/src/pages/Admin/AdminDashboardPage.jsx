@@ -6,6 +6,7 @@ import {
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import { getAdminStats } from '../../services/adminService';
 import './AdminDashboardPage.css';
+import axios from "axios";
 
 const BOOKING_COLORS = ['#F59E0B', '#2D6A4F', '#EF4444', '#94A3B8'];
 const TICKET_COLORS = ['#F59E0B', '#3B82F6', '#2D6A4F', '#94A3B8', '#EF4444'];
@@ -46,14 +47,48 @@ const AdminDashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [analytics, setAnalytics] = useState({
+    topResources: [],
+    peakBookingHours: []
+  });
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    console.log("Token:", token); // check if token exists
+    axios.get("http://localhost:8080/api/admin/analytics", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+        .then((res) => {
+          console.log("Analytics response:", res.data); // check what comes back
+          setAnalytics({
+            topResources: res.data?.topResources || [],
+            peakBookingHours: res.data?.peakBookingHours || []
+          });
+        })
+        .catch((err) => {
+          console.error("Analytics failed:", err.response?.status, err.response?.data);
+        });
+  }, []);
   useEffect(() => {
     getAdminStats()
       .then((res) => setStats(res.data))
       .catch(() => setError('Failed to load dashboard stats.'))
       .finally(() => setLoading(false));
   }, []);
-
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    axios.get("http://localhost:8080/api/admin/analytics", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+        .then((res) => {
+          setAnalytics({
+            topResources: res.data?.topResources || [],
+            peakBookingHours: res.data?.peakBookingHours || []
+          });
+        })
+        .catch((err) => {
+          console.error("Analytics failed:", err);
+        });
+  }, []);
   return (
     <DashboardLayout title="Admin Dashboard">
       <div className="admin-dashboard-page">
@@ -188,6 +223,43 @@ const AdminDashboardPage = () => {
             </section>
           </>
         )}
+        {/* Resource Analytics */}
+        <h3 className="admin-section-title">Resource Analytics</h3>
+        <section className="admin-analytics-grid">
+
+          <div className="admin-chart-card">
+            <h4>Top Resources</h4>
+            {(analytics.topResources?.length ?? 0) === 0 ? (
+                <p className="admin-no-data">No booking data available yet</p>
+            ) : (
+                <ul className="admin-analytics-list">
+                  {analytics.topResources.map((item, index) => (
+                      <li key={index}>
+                        <span>{item.name}</span>
+                        <span className="admin-analytics-badge">{item.value} bookings</span>
+                      </li>
+                  ))}
+                </ul>
+            )}
+          </div>
+
+          <div className="admin-chart-card">
+            <h4>Peak Booking Hours</h4>
+            {(analytics.peakBookingHours?.length ?? 0) === 0 ? (
+                <p className="admin-no-data">No booking data available yet</p>
+            ) : (
+                <ul className="admin-analytics-list">
+                  {analytics.peakBookingHours.map((item, index) => (
+                      <li key={index}>
+                        <span>{item.hour}</span>
+                        <span className="admin-analytics-badge">{item.value} bookings</span>
+                      </li>
+                  ))}
+                </ul>
+            )}
+          </div>
+
+        </section>
 
       </div>
     </DashboardLayout>

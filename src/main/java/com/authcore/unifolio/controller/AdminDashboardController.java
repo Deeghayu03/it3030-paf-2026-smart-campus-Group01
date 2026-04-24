@@ -108,4 +108,33 @@ public class AdminDashboardController {
         userRepository.delete(user);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/analytics")
+    public ResponseEntity<Map<String, Object>> getUsageAnalytics() {
+        Map<String, Object> analytics = new HashMap<>();
+
+        List<Map<String, Object>> topResources = new ArrayList<>();
+        List<Object[]> resourceData = bookingRepository.findTopResources();
+
+        for (Object[] row : resourceData) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("name", row[0]);
+            entry.put("value", row[1]);
+            topResources.add(entry);
+        }
+
+        List<Map<String, Object>> peakBookingHours = new ArrayList<>();
+        List<Object[]> hourData = bookingRepository.findPeakBookingHours();
+
+        for (Object[] row : hourData) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("hour", row[0] + ":00");
+            entry.put("value", row[1]);
+            peakBookingHours.add(entry);
+        }
+
+        analytics.put("topResources", topResources);
+        analytics.put("peakBookingHours", peakBookingHours);
+
+        return ResponseEntity.ok(analytics);
+    }
 }

@@ -24,10 +24,12 @@ public class ResourceController {
     public ResponseEntity<List<Resource>> getResources(
             @RequestParam(required = false) Resource.ResourceType type,
             @RequestParam(required = false) String location,
-            @RequestParam(required = false) Integer minCapacity
+            @RequestParam(required = false) Integer minCapacity,
+            @RequestParam(required = false) Resource.ResourceStatus status
     ) {
-        List<Resource> resources = resourceService.getFilteredResources(type, location, minCapacity);
-        System.out.println("Resources count from DB: " + resources.size());
+        List<Resource> resources =
+                resourceService.getFilteredResources(type, location, minCapacity, status);
+
         return ResponseEntity.ok(resources);
     }
 

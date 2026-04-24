@@ -57,6 +57,43 @@ public class ResourceService {
         return resourceRepository.findAll();
     }
 
+    public List<Resource> getFilteredResources(
+            Resource.ResourceType type,
+            String location,
+            Integer minCapacity,
+            Resource.ResourceStatus status
+    ) {
+        boolean hasType = type != null;
+        boolean hasLocation = location != null && !location.trim().isEmpty();
+        boolean hasMinCapacity = minCapacity != null;
+        boolean hasStatus = status != null;
+
+        if (hasType && hasLocation && hasMinCapacity && hasStatus) {
+            return resourceRepository
+                    .findByTypeAndLocationContainingIgnoreCaseAndCapacityGreaterThanEqualAndStatus(
+                            type, location, minCapacity, status
+                    );
+        }
+
+        if (hasType && hasStatus) {
+            return resourceRepository.findByTypeAndStatus(type, status);
+        }
+
+        if (hasLocation && hasStatus) {
+            return resourceRepository.findByLocationContainingIgnoreCaseAndStatus(location, status);
+        }
+
+        if (hasMinCapacity && hasStatus) {
+            return resourceRepository.findByCapacityGreaterThanEqualAndStatus(minCapacity, status);
+        }
+
+        if (hasStatus) {
+            return resourceRepository.findByStatus(status);
+        }
+
+        return getFilteredResources(type, location, minCapacity);
+    }
+
     public Resource getResourceById(Long id) {
         return resourceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Resource not found with id: " + id));
@@ -65,6 +102,10 @@ public class ResourceService {
     public Resource createResource(Resource resource) {
         if (resource.getStatus() == null) {
             resource.setStatus(Resource.ResourceStatus.ACTIVE);
+        }
+
+        if (resource.getDescription() != null) {
+            resource.setDescription(resource.getDescription().trim());
         }
 
         validateResource(resource);
@@ -152,6 +193,10 @@ public class ResourceService {
             if (resource.getCapacity() != null && resource.getCapacity() < 1) {
                 throw new RuntimeException("Equipment capacity must be at least 1 if provided");
             }
+        }
+
+        if (resource.getDescription() != null && resource.getDescription().length() > 500) {
+            throw new RuntimeException("Description cannot exceed 500 characters");
         }
     }
 }
