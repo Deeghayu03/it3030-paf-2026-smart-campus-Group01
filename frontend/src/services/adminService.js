@@ -1,13 +1,13 @@
-import axiosConfig from '../api/axiosConfig';
+import api from '../api/axiosConfig';
 
 export const getAdminStats = () => {
-  return axiosConfig.get('/admin/stats');
+  return api.get('/admin/stats');
 };
 
 export const getAdminUsers = () => {
-  return axiosConfig.get('/admin/users');
+  return api.get('/admin/users');
 };
 
 export const deleteAdminUser = (id) => {
-  return axiosConfig.delete(`/admin/users/${id}`);
+  return api.delete(`/admin/users/${id}`);
 };

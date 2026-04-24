@@ -45,7 +45,7 @@ public class BookingController {
     }
 
     // ❗ ADMIN: Get ALL bookings
-    @GetMapping("/all")
+    @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllBookings() {
         return ResponseEntity.ok(bookingService.getAllBookings());
@@ -81,12 +81,9 @@ public class BookingController {
             "data", bookingService.cancelBooking(id, reason)
         ));
     }
-    // ✅ USER: Delete own booking (Permanent)
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        bookingService.deleteBooking(id);
-        return ResponseEntity.ok(Map.of(
-            "message", "Booking deleted permanently"
-        ));
+    // ✅ TIMELINE: Get booking lifecycle
+    @GetMapping("/{id}/timeline")
+    public ResponseEntity<?> getTimeline(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.getBookingTimeline(id));
     }
 }

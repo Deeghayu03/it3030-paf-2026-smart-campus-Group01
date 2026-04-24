@@ -26,23 +26,7 @@ const TechnicianResourcesPage = () => {
             setLoading(true);
             setError('');
 
-            const token = localStorage.getItem('token');
-
-            const params = {};
-            if (customFilters.type) params.type = customFilters.type;
-            if (customFilters.status) params.status = customFilters.status;
-            if (customFilters.location.trim()) params.location = customFilters.location.trim();
-            if (customFilters.minCapacity !== '') {
-                params.minCapacity = Number(customFilters.minCapacity);
-            }
-
-            const response = await axios.get(API_URL, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                params,
-            });
-
+            const response = await api.get('/resources');
             setResources(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to load resources');
@@ -88,16 +72,11 @@ const TechnicianResourcesPage = () => {
             setError('');
             setMessage('');
 
-            const token = localStorage.getItem('token');
-
-            await axios.patch(
-                `${API_URL}/${id}/status`,
+            await api.patch(
+                `/resources/${id}/status`,
                 null,
                 {
-                    params: { status },
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    params: { status }
                 }
             );
 

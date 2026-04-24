@@ -1,17 +1,17 @@
-import axiosConfig from '../api/axiosConfig';
+import api from '../api/axiosConfig';
 
 export const getMyNotifications = () => {
-  return axiosConfig.get('/notifications/my');
+  return api.get('/notifications/my');
 };
 
 export const getUnreadCount = () => {
-  return axiosConfig.get('/notifications/unread-count');
+  return api.get('/notifications/unread-count');
 };
 
 export const markAsRead = (id) => {
-  return axiosConfig.put(`/notifications/${id}/read`);
+  return api.put(`/notifications/${id}/read`);
 };
 
 export const markAllAsRead = () => {
-  return axiosConfig.put('/notifications/read-all');
+  return api.put('/notifications/read-all');
 };

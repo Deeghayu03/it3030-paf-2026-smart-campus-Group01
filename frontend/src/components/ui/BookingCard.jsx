@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './BookingCard.css';
-import { formatTime } from '../../utils/formatTime';
 
-const BookingCard = ({ booking, onDelete, onEdit, onBookAgain, onApprove, onReject, currentUser }) => {
+
+import { formatTime, formatTimeRange } from '../../utils/timeFormatter';
+import { formatRole } from '../../utils/helpers';
+
+import BookingTimeline from '../booking/BookingTimeline';
+import { getBookingTimeline } from '../../services/bookingService';
+
+const BookingCard = ({ booking, onCancel, onEdit, onBookAgain, onApprove, onReject, currentUser }) => {
   const {
     id,
     resourceName,
@@ -16,8 +22,30 @@ const BookingCard = ({ booking, onDelete, onEdit, onBookAgain, onApprove, onReje
     createdBy,
     userId,
     role: bookingRole,
-    isAdminBooking
+    isAdminBooking,
+    cancelledBy,
+    cancellationReason
   } = booking;
+
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [timelineData, setTimelineData] = useState(null);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+
+  const toggleTimeline = async () => {
+    setShowTimeline(prev => !prev);
+    if (!showTimeline && !timelineData) {
+      setTimelineLoading(true);
+      try {
+        const response = await getBookingTimeline(id);
+        setTimelineData(response.data);
+      } catch (err) {
+        console.error("Failed to fetch timeline:", err);
+      } finally {
+        setTimelineLoading(false);
+      }
+    }
+  };
+
 
   const isOwner = currentUser && (
     String(createdBy) === String(currentUser.id) || 
@@ -90,7 +118,7 @@ const BookingCard = ({ booking, onDelete, onEdit, onBookAgain, onApprove, onReje
         <div className="detail-col">
           <label className="upper-label">TIME</label>
           <div className="value-display highlight-time">
-            {formatTime(startTime)} - {formatTime(endTime)}
+            {formatTimeRange(startTime, endTime)}
           </div>
         </div>
       </div>
@@ -106,8 +134,8 @@ const BookingCard = ({ booking, onDelete, onEdit, onBookAgain, onApprove, onReje
             )}
             
             {(status === 'PENDING' || status === 'APPROVED') && (
-              <button className="btn-delete-direct" onClick={() => onDelete(id)}>
-                Delete Booking
+              <button className="btn-delete-direct" onClick={() => onCancel(id)}>
+                Cancel Booking
               </button>
             )}
             {status === 'CANCELLED' && (
@@ -136,7 +164,14 @@ const BookingCard = ({ booking, onDelete, onEdit, onBookAgain, onApprove, onReje
               </div>
             ) || status === 'CANCELLED' && (
                <div className="rejection-info">
-                <p className="rejection-reason-small">Booking Cancelled</p>
+                <p className="rejection-reason-small" style={{ color: '#64748b' }}>
+                  <strong>Cancelled by:</strong> {formatRole(cancelledBy)}
+                </p>
+                {cancellationReason && (
+                  <p className="rejection-reason-small">
+                    <strong>Reason:</strong> {cancellationReason}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -148,6 +183,25 @@ const BookingCard = ({ booking, onDelete, onEdit, onBookAgain, onApprove, onReje
           </div>
         )}
       </div>
+
+      {/* TIMELINE TOGGLE */}
+      <div className="timeline-toggle-area">
+        <button className="btn-view-timeline" onClick={toggleTimeline}>
+          {showTimeline ? 'Hide Timeline ▲' : 'View Timeline ▼'}
+        </button>
+      </div>
+
+      {showTimeline && (
+        <div className="timeline-container">
+          {timelineLoading ? (
+            <div className="timeline-loading">Loading timeline...</div>
+          ) : timelineData ? (
+            <BookingTimeline timelineData={timelineData} />
+          ) : (
+            <div className="timeline-loading">No timeline data</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

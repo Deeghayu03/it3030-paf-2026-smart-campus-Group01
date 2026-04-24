@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axiosInstance from '../../api/axiosConfig';
+import api from '../../api/axiosConfig';
 import { ROUTES } from '../../constants/routes';
 import './RegisterPage.css';
 import '../Auth/LoginPage.css';
@@ -29,7 +29,7 @@ const RegisterPage = () => {
     setStatus({ type: '', message: '' });
 
     try {
-      await axiosInstance.post('/auth/register', formData);
+      await api.post('/auth/register', formData);
       setStatus({ type: 'success', message: 'Registration successful! Redirecting to login...' });
       setTimeout(() => navigate(ROUTES.LOGIN), 2000);
     } catch (err) {

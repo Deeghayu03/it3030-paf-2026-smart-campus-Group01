@@ -59,8 +59,8 @@
 }
 
 .pill-cancelled {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: #f1f5f9;
+  color: #475569;
 }
 
 /* Solid rejected badge like in image for Rejected */
@@ -301,4 +301,56 @@
   margin: 4px 0 0 0;
   font-style: italic;
 }
+/* TIMELINE TOGGLE */
+.timeline-toggle-area {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
 
+.btn-view-timeline {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-view-timeline:hover {
+  color: #3b82f6;
+}
+
+.chevron-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s;
+}
+
+.chevron-icon.up {
+  transform: rotate(180deg);
+}
+
+.timeline-container {
+  display: block;
+  margin-top: 12px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.timeline-loading {
+  padding: 20px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  font-style: italic;
+}

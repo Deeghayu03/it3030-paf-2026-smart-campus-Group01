@@ -5,9 +5,10 @@ import BookingForm from '../../components/ui/BookingForm';
 import ConflictResolution from '../../components/ui/ConflictResolution';
 import AdminBookingItem from '../../components/ui/AdminBookingItem';
 import Button from '../../components/ui/Button/Button';
-import { getMyBookings, getAllBookings, createBooking, updateBooking, cancelBooking, approveBooking, rejectBooking, deleteBooking } from '../../services/bookingService';
+import CancelBookingModal from '../../components/common/CancelBookingModal';
+import { getMyBookings, getAllBookings, createBooking, updateBooking, cancelBooking, approveBooking, rejectBooking } from '../../services/bookingService';
 import { AuthContext } from '../../context/AuthContext';
-import { formatTime } from '../../utils/formatTime';
+import { formatTime } from '../../utils/timeFormatter';
 import './BookingsPage.css';
 
 const BookingsPage = () => {
@@ -41,8 +42,15 @@ const BookingsPage = () => {
   // Helper function to format date to ISO format (YYYY-MM-DD)
   const formatDate = (date) => {
     if (!date) return "";
-    return new Date(date).toISOString().split("T")[0];
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return date;
+      return d.toISOString().split("T")[0];
+    } catch (e) {
+      return date;
+    }
   };
+
 
   const [bookings, setBookings] = useState([]);
   const [adminBookings, setAdminBookings] = useState([]);
@@ -60,8 +68,7 @@ const BookingsPage = () => {
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteBookingId, setDeleteBookingId] = useState(null);
+
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelBookingId, setCancelBookingId] = useState(null);
 
@@ -84,11 +91,24 @@ const BookingsPage = () => {
     if (!silent) setLoading(true);
     try {
       const response = await getMyBookings();
-      console.log("My Bookings:", response.data);
-      setBookings(response.data);
+      console.log("My Bookings fetched:", response.data);
+      const data = response.data?.data || response.data?.bookings || response.data;
+      console.log("Bookings processed:", data);
+      setBookings(Array.isArray(data) ? data : []);
+
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      setMessage({ type: 'error', text: 'Failed to load bookings' });
+      console.error("FETCH_MY_BOOKINGS_ERROR:", err.response?.data || err.message);
+      console.log("Bookings set to empty array due to error");
+      setBookings([]);
+
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+      if (err.response?.status === 403) {
+        setMessage({ type: 'error', text: 'Access denied: You can only view your own bookings.' });
+      } else if (err.response?.status === 401) {
+        setMessage({ type: 'error', text: 'Authentication failed: Please sign in again.' });
+      } else {
+        setMessage({ type: 'error', text: `Failed to load your bookings: ${errorMsg}` });
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -98,11 +118,21 @@ const BookingsPage = () => {
     if (!silent) setLoading(true);
     try {
       const response = await getAllBookings();
-      setAdminBookings(response.data);
-      console.log("ADMIN BOOKINGS DATA:", response.data);
+      const data = response.data?.data || response.data?.bookings || response.data;
+      console.log("Admin Bookings processed:", data);
+      setAdminBookings(Array.isArray(data) ? data : []);
+
+      console.log("Admin Bookings fetched:", response.data);
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      setMessage({ type: 'error', text: 'Failed to load bookings' });
+      console.error("FETCH_ADMIN_BOOKINGS_ERROR:", err.response?.data || err.message);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+      if (err.response?.status === 403) {
+        setMessage({ type: 'error', text: 'Admin access required to view all bookings.' });
+      } else if (err.response?.status === 401) {
+        setMessage({ type: 'error', text: 'Session expired: Please login again.' });
+      } else {
+        setMessage({ type: 'error', text: `Failed to load administration booking data: ${errorMsg}` });
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -167,18 +197,8 @@ const BookingsPage = () => {
     setMessage(null);
   };
 
-  const handleCancel = async (id) => {
+  const handleCancel = async (id, reason) => {
     const isActuallyAdmin = role === 'ADMIN' && viewMode === 'admin';
-    let reason = null;
-
-    if (isActuallyAdmin) {
-      reason = window.prompt('Enter cancellation reason (REQUIRED for admin):');
-      if (reason === null) return; // User cancelled prompt
-      if (!reason.trim()) {
-        alert('Reason is required for admin cancellation');
-        return;
-      }
-    }
     
     try {
       await cancelBooking(id, reason);
@@ -190,32 +210,11 @@ const BookingsPage = () => {
   };
 
   const initiateCancel = (id) => {
-    const isActuallyAdmin = role === 'ADMIN' && viewMode === 'admin';
-    if (isActuallyAdmin) {
-      handleCancel(id);
-    } else {
-      setCancelBookingId(id);
-      setShowCancelModal(true);
-    }
+    setCancelBookingId(id);
+    setShowCancelModal(true);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await deleteBooking(id);
-      setMessage({ type: 'success', text: 'Booking deleted permanently' });
-      
-      // Immediately remove from UI without refresh
-      setBookings(prev => prev.filter(b => b.id !== id));
-      setAdminBookings(prev => prev.filter(b => b.id !== id));
-    } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to delete booking' });
-    }
-  };
 
-  const initiateDelete = (id) => {
-    setDeleteBookingId(id);
-    setShowDeleteModal(true);
-  };
 
   const handleApprove = async (id) => {
     try {
@@ -389,8 +388,9 @@ const BookingsPage = () => {
                     return sortBy === 'date_desc' ? dateB - dateA : dateA - dateB;
                   })
                   .length > 0 ? (
-                  adminBookings
+                  (adminBookings || [])
                     .filter(b => statusFilter === 'ALL' || b.status === statusFilter)
+
                     .filter(b => b.role === 'student' || b.userRole === 'STUDENT' || (b.userRole !== 'ADMIN' && b.role !== 'admin')) // Safety check: only students
                     .sort((a, b) => {
                       const dateA = new Date(a.bookingDate + 'T' + a.startTime);
@@ -420,8 +420,9 @@ const BookingsPage = () => {
                 )) // Personal tab: show bookings owned/created by the admin
                 .length > 0 ? (
                 <div className="bookings-grid">
-                  {bookings
+                  {(bookings || [])
                     .filter(b => statusFilter === 'ALL' || b.status === statusFilter)
+
                     .filter(b => role !== 'ADMIN' || (
                       (b.userId && String(b.userId) === String(user?.id)) || 
                       (b.createdBy && String(b.createdBy) === String(user?.id)) ||
@@ -433,7 +434,7 @@ const BookingsPage = () => {
                         key={booking.id} 
                         booking={booking} 
                         currentUser={user}
-                        onDelete={initiateDelete}
+                        onCancel={initiateCancel}
                         onEdit={handleEdit}
                         onBookAgain={handleBookAgain}
                         onApprove={handleApprove}
@@ -540,65 +541,18 @@ const BookingsPage = () => {
         </div>
       )}
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-[400px] p-6 animate-scaleIn">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Delete Booking
-            </h2>
-            <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to permanently delete this booking? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  handleDelete(deleteBookingId);
-                  setShowDeleteModal(false);
-                }}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 shadow-sm transition"
-              >
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-[400px] p-6 animate-scaleIn">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Cancel Booking
-            </h2>
-            <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to cancel this booking? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowCancelModal(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-              >
-                Keep Booking
-              </button>
-              <button
-                onClick={() => {
-                  handleCancel(cancelBookingId);
-                  setShowCancelModal(false);
-                }}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 shadow-sm transition"
-              >
-                Yes, Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <CancelBookingModal 
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={(reason) => {
+          if (cancelBookingId) {
+            handleCancel(cancelBookingId, reason);
+          }
+        }}
+        isAdmin={role === 'ADMIN' && viewMode === 'admin'}
+      />
     </DashboardLayout>
   );
 };
