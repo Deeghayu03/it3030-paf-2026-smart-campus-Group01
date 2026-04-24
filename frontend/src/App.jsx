@@ -12,9 +12,12 @@ import BookingsPage from './pages/Bookings/BookingsPage';
 import TicketsPage from './pages/Tickets/TicketsPage';
 import NotificationsPage from './pages/Notifications/NotificationsPage';
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
+import ManageUsersPage from './pages/Admin/ManageUsersPage';
 import OAuth2CallbackPage from './pages/Auth/OAuth2CallbackPage';
+import CompleteProfilePage from './pages/Auth/CompleteProfilePage';
 import AdminResourcesPage from './pages/Resources/AdminResourcesPage';
 import TechnicianDashboardPage from './pages/Technician/TechnicianDashboardPage';
+import TechnicianResourcesPage from './pages/Technician/TechnicianResourcesPage';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -23,95 +26,30 @@ const ProtectedRoute = ({ children }) => {
 
 const App = () => {
   return (
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path={ROUTES.HOME} element={<HomePage />} />
-            <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-            <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-            <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path={ROUTES.HOME} element={<HomePage />} />
+          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+          <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
+          <Route path="/complete-profile" element={<CompleteProfilePage />} />
 
-            <Route
-                path={ROUTES.DASHBOARD}
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.RESOURCES}
-                element={
-                  <ProtectedRoute>
-                    <ResourcesPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.BOOKINGS}
-                element={
-                  <ProtectedRoute>
-                    <BookingsPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.TICKETS}
-                element={
-                  <ProtectedRoute>
-                    <TicketsPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.NOTIFICATIONS}
-                element={
-                  <ProtectedRoute>
-                    <NotificationsPage />
-                  </ProtectedRoute>
-                }
-            />
+          {/* Student Routes */}
+          <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path={ROUTES.RESOURCES} element={<ProtectedRoute><ResourcesPage /></ProtectedRoute>} />
+          <Route path={ROUTES.BOOKINGS} element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
+          <Route path={ROUTES.TICKETS} element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
+          <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
-            <Route
-                path={ROUTES.ADMIN_DASHBOARD}
-                element={
-                  <ProtectedRoute>
-                    <AdminDashboardPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.ADMIN_RESOURCES}
-                element={
-                  <ProtectedRoute>
-                    <AdminResourcesPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.ADMIN_BOOKINGS}
-                element={
-                  <ProtectedRoute>
-                    <BookingsPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.ADMIN_TICKETS}
-                element={
-                  <ProtectedRoute>
-                    <TicketsPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.ADMIN_NOTIFICATIONS}
-                element={
-                  <ProtectedRoute>
-                    <NotificationsPage />
-                  </ProtectedRoute>
-                }
-            />
+          {/* Admin Routes */}
+          <Route path={ROUTES.ADMIN_DASHBOARD} element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+          <Route path={ROUTES.ADMIN_USERS} element={<ProtectedRoute><ManageUsersPage /></ProtectedRoute>} />
+          <Route path={ROUTES.ADMIN_RESOURCES} element={<ProtectedRoute><AdminResourcesPage /></ProtectedRoute>} />
+          <Route path={ROUTES.ADMIN_BOOKINGS} element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
+          <Route path={ROUTES.ADMIN_TICKETS} element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
+          <Route path={ROUTES.ADMIN_NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
             <Route
                 path={ROUTES.TECHNICIAN_DASHBOARD}
@@ -137,19 +75,19 @@ const App = () => {
                   </ProtectedRoute>
                 }
             />
-            <Route
-                path={ROUTES.TECHNICIAN_RESOURCES}
-                element={
-                  <ProtectedRoute>
-                    <ResourcesPage />
-                  </ProtectedRoute>
-                }
-            />
+              <Route
+                  path={ROUTES.TECHNICIAN_RESOURCES}
+                  element={
+                      <ProtectedRoute>
+                          <TechnicianResourcesPage />
+                      </ProtectedRoute>
+                  }
+              />
 
-            <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+          <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 };
 

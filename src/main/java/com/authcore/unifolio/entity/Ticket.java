@@ -28,27 +28,20 @@ public class Ticket {
     @Column(nullable = false)
     private String location;
 
-    @Enumerated(EnumType.STRING)
-    private TicketCategory category;
-
     @Column(nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TicketPriority priority;
 
     @Enumerated(EnumType.STRING)
     private TicketStatus status;
 
-    private String contactDetails;
     private String resolutionNotes;
     private String rejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    public enum TicketCategory {
-        ELECTRICAL, PLUMBING, IT_EQUIPMENT, FURNITURE, OTHER
-    }
 
     public enum TicketPriority {
         LOW, MEDIUM, HIGH, CRITICAL
@@ -64,6 +57,9 @@ public class Ticket {
         this.updatedAt = LocalDateTime.now();
         if (this.status == null) {
             this.status = TicketStatus.OPEN;
+        }
+        if (this.priority == null) {
+            this.priority = TicketPriority.MEDIUM;
         }
     }
 

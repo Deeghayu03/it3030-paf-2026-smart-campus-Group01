@@ -1,175 +1,269 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+} from 'recharts';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
-import { getResources } from '../../services/resourceService';
-import { ROUTES } from '../../constants/routes';
+import { getAdminStats } from '../../services/adminService';
+import './AdminDashboardPage.css';
+import axios from "axios";
+
+const BOOKING_COLORS = ['#F59E0B', '#2D6A4F', '#EF4444', '#94A3B8'];
+const TICKET_COLORS = ['#F59E0B', '#3B82F6', '#2D6A4F', '#94A3B8', '#EF4444'];
+const USER_COLORS = ['#2D6A4F', '#52B788', '#9C27B0'];
+
+const STAT_CARDS = [
+  {
+    key: 'totalTechnicians',
+    title: 'Total Technicians',
+    subtitle: 'Active technicians',
+    color: '#52B788',
+    icon: '🔧',
+  },
+  {
+    key: 'totalStudents',
+    title: 'Total Students',
+    subtitle: 'Registered students',
+    color: '#2D6A4F',
+    icon: '🎓',
+  },
+  {
+    key: 'totalBookings',
+    title: 'Total Bookings',
+    subtitle: 'All time',
+    color: '#3B82F6',
+    icon: '📅',
+  },
+  {
+    key: 'totalTickets',
+    title: 'Total Tickets',
+    subtitle: 'Maintenance requests',
+    color: '#F59E0B',
+    icon: '🎫',
+  },
+];
 
 const AdminDashboardPage = () => {
-    const navigate = useNavigate();
-    const adminName = localStorage.getItem('name') || 'Admin';
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [analytics, setAnalytics] = useState({
+    topResources: [],
+    peakBookingHours: []
+  });
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    console.log("Token:", token); // check if token exists
+    axios.get("http://localhost:8080/api/admin/analytics", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+        .then((res) => {
+          console.log("Analytics response:", res.data); // check what comes back
+          setAnalytics({
+            topResources: res.data?.topResources || [],
+            peakBookingHours: res.data?.peakBookingHours || []
+          });
+        })
+        .catch((err) => {
+          console.error("Analytics failed:", err.response?.status, err.response?.data);
+        });
+  }, []);
+  useEffect(() => {
+    getAdminStats()
+      .then((res) => setStats(res.data))
+      .catch(() => setError('Failed to load dashboard stats.'))
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    axios.get("http://localhost:8080/api/admin/analytics", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+        .then((res) => {
+          setAnalytics({
+            topResources: res.data?.topResources || [],
+            peakBookingHours: res.data?.peakBookingHours || []
+          });
+        })
+        .catch((err) => {
+          console.error("Analytics failed:", err);
+        });
+  }, []);
+  return (
+    <DashboardLayout title="Admin Dashboard">
+      <div className="admin-dashboard-page">
 
-    const [stats, setStats] = useState({
-        resources: 0,
-        bookings: 0,
-        pending: 0,
-        tickets: 0,
-    });
+        {/* Welcome Banner */}
+        <section className="admin-welcome-banner">
+          <div className="admin-welcome-content">
+            <div className="admin-badge">ADMIN</div>
+            <h2>System Overview</h2>
+            <p>Monitor platform activity, users, and resource usage</p>
+          </div>
+          <div className="admin-welcome-visual">
+            <div className="admin-circle-1" />
+            <div className="admin-circle-2" />
+            <div className="admin-rect-1" />
+          </div>
+        </section>
 
-    useEffect(() => {
-        const loadDashboardData = async () => {
-            try {
-                const data = await getResources();
-
-                setStats((prev) => ({
-                    ...prev,
-                    resources: data?.length || 0,
-                    bookings: 12,
-                    pending: 4,
-                    tickets: 7,
-                }));
-            } catch (error) {
-                console.error('Failed to load admin dashboard data:', error);
-            }
-        };
-
-        loadDashboardData();
-    }, []);
-
-    return (
-        <DashboardLayout title="Admin Dashboard" notificationCount={3}>
-            <div className="dashboard-page">
-                <section
-                    className="welcome-banner"
-                    style={{
-                        background: 'linear-gradient(135deg, #eef2ff 0%, #dbeafe 100%)',
-                    }}
+        {/* Stat Cards */}
+        {loading ? (
+          <div className="admin-loading-state">
+            <div className="admin-spinner" />
+            Loading stats...
+          </div>
+        ) : error ? (
+          <div className="admin-error-state">{error}</div>
+        ) : (
+          <>
+            <section className="admin-stats-section">
+              {STAT_CARDS.map((card) => (
+                <div
+                  key={card.key}
+                  className="admin-stat-card"
+                  style={{ borderTopColor: card.color }}
                 >
-                    <div className="welcome-content">
-                        <h2>Welcome back, {adminName}!</h2>
-                        <p>
-                            Manage campus resources, booking requests, and maintenance operations
-                            from one place.
-                        </p>
+                  <div className="admin-stat-header">
+                    <div
+                      className="admin-stat-icon"
+                      style={{ backgroundColor: card.color + '1A' }}
+                    >
+                      {card.icon}
                     </div>
+                    <h3 className="admin-stat-title">{card.title}</h3>
+                  </div>
+                  <div className="admin-stat-value">
+                    {stats[card.key] ?? 0}
+                  </div>
+                  <p className="admin-stat-subtitle">{card.subtitle}</p>
+                </div>
+              ))}
+            </section>
 
-                    <div className="welcome-visual">
-                        <div className="abstract-art-small">
-                            <div className="circle-1"></div>
-                            <div className="circle-2"></div>
-                            <div className="rect-1"></div>
-                        </div>
-                    </div>
-                </section>
+            {/* Analytics */}
+            <h3 className="admin-section-title">Analytics</h3>
+            <section className="admin-analytics-grid">
 
-                <section className="stats-section">
-                    <div className="stat-card" style={{ borderTopColor: '#2563EB' }}>
-                        <div className="stat-header">
-                            <div className="stat-icon-circle" style={{ backgroundColor: '#2563EB' }}>
-                                R
-                            </div>
-                            <h3 className="stat-title">Total Resources</h3>
-                        </div>
-                        <div className="stat-value">{stats.resources}</div>
-                        <p className="stat-subtitle">Resources available in the system</p>
-                    </div>
+              {/* Bookings by Status — Pie */}
+              <div className="admin-chart-card">
+                <h4>Bookings by Status</h4>
+                <div className="admin-chart-wrapper">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={stats.bookingsByStatus}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={75}
+                        innerRadius={35}
+                      >
+                        {stats.bookingsByStatus.map((_, i) => (
+                          <Cell key={i} fill={BOOKING_COLORS[i % BOOKING_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend iconSize={10} iconType="circle" />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-                    <div className="stat-card" style={{ borderTopColor: '#52B788' }}>
-                        <div className="stat-header">
-                            <div className="stat-icon-circle" style={{ backgroundColor: '#52B788' }}>
-                                B
-                            </div>
-                            <h3 className="stat-title">Total Bookings</h3>
-                        </div>
-                        <div className="stat-value">{stats.bookings}</div>
-                        <p className="stat-subtitle">All submitted booking requests</p>
-                    </div>
+              {/* Tickets by Status — Bar */}
+              <div className="admin-chart-card">
+                <h4>Tickets by Status</h4>
+                <div className="admin-chart-wrapper">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart
+                      data={stats.ticketsByStatus}
+                      margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {stats.ticketsByStatus.map((_, i) => (
+                          <Cell key={i} fill={TICKET_COLORS[i % TICKET_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-                    <div className="stat-card" style={{ borderTopColor: '#F4A261' }}>
-                        <div className="stat-header">
-                            <div className="stat-icon-circle" style={{ backgroundColor: '#F4A261' }}>
-                                P
-                            </div>
-                            <h3 className="stat-title">Pending Requests</h3>
-                        </div>
-                        <div className="stat-value">{stats.pending}</div>
-                        <p className="stat-subtitle">Waiting for admin review</p>
-                    </div>
+              {/* User Distribution — Pie */}
+              <div className="admin-chart-card">
+                <h4>User Distribution</h4>
+                <div className="admin-chart-wrapper">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={stats.userDistribution}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={75}
+                        innerRadius={35}
+                      >
+                        {stats.userDistribution.map((_, i) => (
+                          <Cell key={i} fill={USER_COLORS[i % USER_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend iconSize={10} iconType="circle" />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-                    <div className="stat-card" style={{ borderTopColor: '#E63946' }}>
-                        <div className="stat-header">
-                            <div className="stat-icon-circle" style={{ backgroundColor: '#E63946' }}>
-                                T
-                            </div>
-                            <h3 className="stat-title">Open Tickets</h3>
-                        </div>
-                        <div className="stat-value">{stats.tickets}</div>
-                        <p className="stat-subtitle">Require attention or assignment</p>
-                    </div>
-                </section>
+            </section>
+          </>
+        )}
+        {/* Resource Analytics */}
+        <h3 className="admin-section-title">Resource Analytics</h3>
+        <section className="admin-analytics-grid">
 
-                <h3 className="section-title">Admin Actions</h3>
+          <div className="admin-chart-card">
+            <h4>Top Resources</h4>
+            {(analytics.topResources?.length ?? 0) === 0 ? (
+                <p className="admin-no-data">No booking data available yet</p>
+            ) : (
+                <ul className="admin-analytics-list">
+                  {analytics.topResources.map((item, index) => (
+                      <li key={index}>
+                        <span>{item.name}</span>
+                        <span className="admin-analytics-badge">{item.value} bookings</span>
+                      </li>
+                  ))}
+                </ul>
+            )}
+          </div>
 
-                <section className="modules-section">
-                    <div className="module-card" style={{ borderTopColor: '#2563EB' }}>
-                        <div
-                            className="module-icon-large"
-                            style={{ color: '#2563EB', backgroundColor: '#DBEAFE' }}
-                        >
-                            R
-                        </div>
-                        <h3 className="module-title">Manage Resources</h3>
-                        <p className="module-desc">
-                            Add, edit, and monitor lecture halls, labs, rooms, and equipment.
-                        </p>
-                        <button
-                            className="btn-primary"
-                            onClick={() => navigate(ROUTES.ADMIN_RESOURCES)}
-                        >
-                            Manage Resources
-                        </button>
-                    </div>
+          <div className="admin-chart-card">
+            <h4>Peak Booking Hours</h4>
+            {(analytics.peakBookingHours?.length ?? 0) === 0 ? (
+                <p className="admin-no-data">No booking data available yet</p>
+            ) : (
+                <ul className="admin-analytics-list">
+                  {analytics.peakBookingHours.map((item, index) => (
+                      <li key={index}>
+                        <span>{item.hour}</span>
+                        <span className="admin-analytics-badge">{item.value} bookings</span>
+                      </li>
+                  ))}
+                </ul>
+            )}
+          </div>
 
-                    <div className="module-card" style={{ borderTopColor: '#52B788' }}>
-                        <div
-                            className="module-icon-large"
-                            style={{ color: '#52B788', backgroundColor: '#D8F3DC' }}
-                        >
-                            B
-                        </div>
-                        <h3 className="module-title">Review Bookings</h3>
-                        <p className="module-desc">
-                            Approve, reject, and monitor booking activity across the campus.
-                        </p>
-                        <button
-                            className="btn-primary"
-                            onClick={() => navigate(ROUTES.ADMIN_BOOKINGS)}
-                        >
-                            View Bookings
-                        </button>
-                    </div>
+        </section>
 
-                    <div className="module-card" style={{ borderTopColor: '#E63946' }}>
-                        <div
-                            className="module-icon-large"
-                            style={{ color: '#E63946', backgroundColor: '#FDE2E4' }}
-                        >
-                            T
-                        </div>
-                        <h3 className="module-title">Manage Tickets</h3>
-                        <p className="module-desc">
-                            Track incidents, update statuses, and monitor maintenance progress.
-                        </p>
-                        <button
-                            className="btn-primary"
-                            onClick={() => navigate(ROUTES.ADMIN_TICKETS)}
-                        >
-                            View Tickets
-                        </button>
-                    </div>
-                </section>
-            </div>
-        </DashboardLayout>
-    );
+      </div>
+    </DashboardLayout>
+  );
 };
 
 export default AdminDashboardPage;

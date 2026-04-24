@@ -1,32 +1,38 @@
-import axiosInstance from '../api/axiosConfig';
+import api from '../api/axiosConfig';
 
-export const getResources = async (filters = {}) => {
+export const getResources = (filters = {}) => {
   const params = {};
 
   if (filters.type) params.type = filters.type;
   if (filters.location) params.location = filters.location;
   if (filters.minCapacity) params.minCapacity = filters.minCapacity;
 
-  const response = await axiosInstance.get('/resources', { params });
-  return response.data;
+  return api.get('/resources', { params });
 };
 
-export const getResourceById = async (id) => {
-  const response = await axiosInstance.get(`/resources/${id}`);
-  return response.data;
+export const getResourceById = (id) => {
+  return api.get(`/resources/${id}`);
 };
 
-export const createResource = async (resourceData) => {
-  const response = await axiosInstance.post('/resources', resourceData);
-  return response.data;
+export const createResource = (resourceData) => {
+  return api.post('/resources', resourceData);
 };
 
-export const updateResource = async (id, resourceData) => {
-  const response = await axiosInstance.put(`/resources/${id}`, resourceData);
-  return response.data;
+export const updateResource = (id, resourceData) => {
+  return api.put(`/resources/${id}`, resourceData);
 };
 
-export const deleteResource = async (id) => {
-  const response = await axiosInstance.delete(`/resources/${id}`);
-  return response.data;
+export const deleteResource = (id) => {
+  return api.delete(`/resources/${id}`);
 };
+
+const resourceService = {
+  getResources,
+  getAllResources: getResources,
+  getResourceById,
+  createResource,
+  updateResource,
+  deleteResource
+};
+
+export default resourceService;

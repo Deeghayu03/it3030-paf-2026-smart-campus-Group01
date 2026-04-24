@@ -1,16 +1,17 @@
-// Module D (notification API calls) - Team Member 4 (Group Leader)
-import axiosInstance from '../api/axiosConfig';
+import api from '../api/axiosConfig';
 
-export const notificationService = {
-  getMyNotifications: () => {
-    return axiosInstance.get('/notifications/my');
-  },
-  markAsRead: (id) => {
-    return axiosInstance.put(`/notifications/${id}/read`);
-  },
-  markAllAsRead: () => {
-    return axiosInstance.put('/notifications/read-all');
-  }
+export const getMyNotifications = () => {
+  return api.get('/notifications/my');
 };
 
-export default notificationService;
+export const getUnreadCount = () => {
+  return api.get('/notifications/unread-count');
+};
+
+export const markAsRead = (id) => {
+  return api.put(`/notifications/${id}/read`);
+};
+
+export const markAllAsRead = () => {
+  return api.put('/notifications/read-all');
+};

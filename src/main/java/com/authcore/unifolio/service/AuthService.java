@@ -7,6 +7,7 @@ import com.authcore.unifolio.repo.StudentRepository;
 import com.authcore.unifolio.dto.AuthResponse;
 import com.authcore.unifolio.dto.LoginRequest;
 import com.authcore.unifolio.dto.RegisterRequest;
+import com.authcore.unifolio.dto.CompleteProfileRequest;
 import com.authcore.unifolio.security.JwtUtil;
 import com.authcore.unifolio.security.CustomUserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -68,8 +69,8 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+        if (user.getPassword() == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
         }
 
         String token = jwtUtil.generateToken(userDetails);
@@ -86,6 +87,34 @@ public class AuthService {
             () -> response.setName(user.getEmail())
         );
 
+        return response;
+    }
+
+    public AuthResponse completeProfile(String email, CompleteProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (studentRepository.existsByUserId(user.getId())) {
+            AuthResponse response = new AuthResponse();
+            response.setSuccess(true);
+            response.setMessage("Profile already completed");
+            return response;
+        }
+
+        Student student = new Student();
+        student.setName(request.getName());
+        student.setStudentId(request.getStudentId());
+        student.setPhone(request.getPhone());
+        student.setDepartment(request.getDepartment());
+        student.setUser(user);
+        studentRepository.save(student);
+
+        AuthResponse response = new AuthResponse();
+        response.setSuccess(true);
+        response.setMessage("Profile completed successfully");
+        response.setEmail(email);
+        response.setName(request.getName());
+        response.setRole(user.getRole().name());
         return response;
     }
 }

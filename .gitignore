@@ -38,3 +38,11 @@ build/
 .env
 .env.*
 application.properties
+
+# Sensitive configuration files
+src/main/resources/application.properties
+src/main/resources/application-local.properties
+
+# Logs and crash reports
+hs_err_pid*.log
+replay_pid*.log
