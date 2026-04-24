@@ -1,263 +1,304 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../../api/axiosConfig';
+import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
+import api from '../../api/axiosConfig';
+import ticketService from '../../services/ticketService';
+import './AdminTicketsPage.css';
 
 const AdminTicketsPage = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [priorityFilter, setPriorityFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Modals
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showUpdate, setShowUpdate] = useState(false);
+
+  const [technicians, setTechnicians] = useState([]);
+
+  // Update Form
+  const [updateStatus, setUpdateStatus] = useState('');
+  const [updateAssigned, setUpdateAssigned] = useState('');
+  const [updateResNotes, setUpdateResNotes] = useState('');
+  const [updateRejReason, setUpdateRejReason] = useState('');
 
   useEffect(() => {
+    const fetchTechnicians = async () => {
+      try {
+        const response = await api.get('/admin/technicians');
+        console.log('Technicians loaded:', response.data);
+        setTechnicians(response.data);
+      } catch (err) {
+        console.error('Failed to load technicians:', err);
+      }
+    };
+    fetchTechnicians();
+
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        const response = await ticketService.getAllTickets();
+        setTickets(response.data);
+      } catch (err) {
+        setError('Failed to load tickets');
+        console.error('Error loading tickets:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchTickets();
   }, []);
-
-  const fetchTickets = async () => {
+  
+  const loadTickets = async () => {
     try {
-      const response = await axiosInstance.get('/tickets');
-      setTickets(response.data);
+      setLoading(true);
+      setError('');
+      const response = await ticketService.getAllTickets();
+      setTickets(response.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load tickets');
+    } finally {
       setLoading(false);
-    } catch (err) {
-      setError('Failed to fetch tickets');
-      setLoading(false);
     }
   };
 
-  const handleAssignTechnician = async (ticketId, technician) => {
+  const handleUpdateStatus = async (e) => {
+    e.preventDefault();
+    if (!selectedTicket) return;
+
     try {
-      await axiosInstance.put(`/tickets/${ticketId}/assign`, { technician });
-      fetchTickets();
-      setShowAssignModal(false);
-      setSelectedTicket(null);
+      const payload = {
+        status: updateStatus,
+        assignedToEmail: updateAssigned,
+        resolutionNotes: updateStatus === 'RESOLVED' ? updateResNotes : '',
+        rejectionReason: updateStatus === 'REJECTED' ? updateRejReason : ''
+      };
+      
+      await ticketService.updateStatus(selectedTicket.id, payload);
+      setShowUpdate(false);
+      alert('Ticket updated successfully!');
+      loadTickets();
     } catch (err) {
-      setError('Failed to assign technician');
+      alert('Error updating ticket: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  const handleUpdateStatus = async (ticketId, status) => {
-    try {
-      await axiosInstance.put(`/tickets/${ticketId}/status`, { status });
-      fetchTickets();
-      setShowStatusModal(false);
-      setSelectedTicket(null);
-    } catch (err) {
-      setError('Failed to update status');
-    }
+  const openUpdateModal = (ticket) => {
+    setSelectedTicket(ticket);
+    setUpdateStatus(ticket.status || 'OPEN');
+    setUpdateAssigned(ticket.assignedToEmail || '');
+    setUpdateResNotes(ticket.resolutionNotes || '');
+    setUpdateRejReason(ticket.rejectionReason || '');
+    setShowUpdate(true);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'OPEN': return 'bg-red-100 text-red-800';
-      case 'IN_PROGRESS': return 'bg-yellow-100 text-yellow-800';
-      case 'RESOLVED': return 'bg-green-100 text-green-800';
-      case 'CLOSED': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'HIGH': return 'text-red-600';
-      case 'MEDIUM': return 'text-yellow-600';
-      case 'LOW': return 'text-green-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading tickets...</div>
-      </div>
-    );
-  }
+  const filteredTickets = tickets.filter(t => {
+    const matchStatus = statusFilter === 'All' || t.status === statusFilter;
+    const matchPriority = priorityFilter === 'All' || t.priority === priorityFilter;
+    const searchLower = searchQuery.toLowerCase();
+    const matchSearch = !searchQuery || 
+        (t.reportedByName && t.reportedByName.toLowerCase().includes(searchLower)) ||
+        (t.location && t.location.toLowerCase().includes(searchLower));
+    
+    return matchStatus && matchPriority && matchSearch;
+  });
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Ticket Management</h1>
-        <p className="text-gray-600">Manage and assign user support tickets</p>
-      </div>
+    <DashboardLayout title="Admin Tickets Dashboard">
+      <div className="admin-tickets-container">
+        <h1 className="page-title">Manage Support Tickets</h1>
+        
+        {error && <div className="error-banner">{error}</div>}
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="filters-bar">
+          <input 
+            type="text" 
+            placeholder="Search by name or location..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="All">All Statuses</option>
+            <option value="OPEN">Open</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="RESOLVED">Resolved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+            <option value="All">All Priorities</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+          </select>
+          <button className="refresh-btn" onClick={loadTickets}>↻ Refresh</button>
         </div>
-      )}
 
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Assigned To
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created By
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {tickets.map((ticket) => (
-                <tr key={ticket.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    #{ticket.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{ticket.title}</div>
-                    <div className="text-sm text-gray-500">{ticket.description}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
-                      {ticket.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm font-medium ${getPriorityColor(ticket.priority)}`}>
-                      {ticket.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {ticket.assignedTo || 'Unassigned'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {ticket.createdBy}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => {
-                        setSelectedTicket(ticket);
-                        setShowAssignModal(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      Assign
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedTicket(ticket);
-                        setShowStatusModal(true);
-                      }}
-                      className="text-green-600 hover:text-green-900"
-                    >
-                      Update Status
-                    </button>
-                  </td>
+        {loading ? (
+          <div className="loading-spinner">Loading tickets...</div>
+        ) : (
+          <div className="table-wrapper">
+            <table className="tickets-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Reported By</th>
+                  <th>Location</th>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredTickets.map(ticket => (
+                  <tr key={ticket.id}>
+                    <td>#{ticket.id}</td>
+                    <td>{ticket.reportedByName || ticket.reportedByEmail}</td>
+                    <td>{ticket.location}</td>
+                    <td>{ticket.category}</td>
+                    <td><span className={`badge priority-${ticket.priority}`}>{ticket.priority}</span></td>
+                    <td><span className={`badge status-${ticket.status}`}>{ticket.status}</span></td>
+                    <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
+                    <td className="actions-cell">
+                      <button className="btn-view" onClick={() => { setSelectedTicket(ticket); setShowDetails(true); }}>View</button>
+                      {ticket.status !== 'RESOLVED' && 
+                       ticket.status !== 'REJECTED' && 
+                       ticket.status !== 'CLOSED' && (
+                        <button className="btn-edit" onClick={() => openUpdateModal(ticket)}>Update</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {filteredTickets.length === 0 && (
+                  <tr>
+                    <td colSpan="8" className="no-data">No tickets found matching filters.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* View Details Modal */}
+        {showDetails && selectedTicket && (
+          <div className="modal-overlay">
+            <div className="modal-content-card">
+              <h2>Ticket Details #{selectedTicket.id}</h2>
+              <div className="ticket-details-grid">
+                <div><strong>Reported By:</strong> {selectedTicket.reportedByName} ({selectedTicket.reportedByEmail})</div>
+                <div><strong>Location:</strong> {selectedTicket.location}</div>
+                <div><strong>Category:</strong> {selectedTicket.category}</div>
+                <div><strong>Priority:</strong> {selectedTicket.priority}</div>
+                <div><strong>Status:</strong> {selectedTicket.status}</div>
+                <div><strong>Assigned To:</strong> {selectedTicket.assignedToName || 'Unassigned'}</div>
+                <div className="full-width"><strong>Description:</strong> <p className="desc-box">{selectedTicket.description}</p></div>
+                {selectedTicket.contactDetails && <div className="full-width"><strong>Contact:</strong> {selectedTicket.contactDetails}</div>}
+              </div>
+
+              {selectedTicket.resolutionNotes && (
+                <div className="notes-box res-notes"><strong>Resolution Notes:</strong> {selectedTicket.resolutionNotes}</div>
+              )}
+              {selectedTicket.rejectionReason && (
+                <div className="notes-box rej-notes"><strong>Rejection Reason:</strong> {selectedTicket.rejectionReason}</div>
+              )}
+
+              <div className="attachments-section">
+                <h3>Attachments ({selectedTicket.attachmentPaths?.length || 0})</h3>
+                <ul className="attachment-list">
+                  {selectedTicket.attachmentPaths && selectedTicket.attachmentPaths.map((path, idx) => (
+                    <li key={idx}><a href={`http://localhost:8080${path}`} target="_blank" rel="noreferrer">Download File {idx + 1}</a></li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="comments-section">
+                <h3>Comments</h3>
+                {selectedTicket.comments && selectedTicket.comments.length > 0 ? (
+                  <div className="comments-list">
+                    {selectedTicket.comments.map(c => (
+                      <div key={c.id} className="comment-card">
+                        <div className="comment-header">
+                          <span className="comment-author">{c.userName || c.userEmail}</span>
+                          <span className="comment-time">{new Date(c.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div className="comment-body">{c.content}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p>No comments yet.</p>}
+              </div>
+
+              <div className="modal-actions">
+                <button className="btn-close" onClick={() => setShowDetails(false)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Update Status Modal */}
+        {showUpdate && selectedTicket && (
+          <div className="modal-overlay">
+            <div className="modal-content-card">
+              <h2>Update Ticket #{selectedTicket.id}</h2>
+              <form onSubmit={handleUpdateStatus} className="update-form">
+                <div className="form-group">
+                  <label>Status</label>
+                  <select value={updateStatus} onChange={e => setUpdateStatus(e.target.value)}>
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                    <option value="REJECTED">Rejected</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Assign To</label>
+                  <select 
+                    value={updateAssigned} 
+                    onChange={(e) => setUpdateAssigned(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+                  >
+                    <option value="">-- Select Technician --</option>
+                    {technicians.map((tech) => (
+                      <option key={tech.email} value={tech.email}>
+                        {tech.name} ({tech.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {updateStatus === 'RESOLVED' && (
+                  <div className="form-group">
+                    <label>Resolution Notes</label>
+                    <textarea value={updateResNotes} onChange={e => setUpdateResNotes(e.target.value)} required />
+                  </div>
+                )}
+                {updateStatus === 'REJECTED' && (
+                  <div className="form-group">
+                    <label>Rejection Reason</label>
+                    <textarea value={updateRejReason} onChange={e => setUpdateRejReason(e.target.value)} required />
+                  </div>
+                )}
+
+                <div className="modal-actions">
+                  <button type="button" className="btn-close" onClick={() => setShowUpdate(false)}>Cancel</button>
+                  <button type="submit" className="btn-save">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Assign Technician Modal */}
-      {showAssignModal && selectedTicket && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                Assign Technician to Ticket #{selectedTicket.id}
-              </h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Technician Email
-                </label>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="technician@example.com"
-                  id="technician-email"
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowAssignModal(false);
-                    setSelectedTicket(null);
-                  }}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const email = document.getElementById('technician-email').value;
-                    handleAssignTechnician(selectedTicket.id, email);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Assign
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Update Status Modal */}
-      {showStatusModal && selectedTicket && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                Update Status for Ticket #{selectedTicket.id}
-              </h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  New Status
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  id="status-select"
-                >
-                  <option value="OPEN">Open</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="CLOSED">Closed</option>
-                </select>
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowStatusModal(false);
-                    setSelectedTicket(null);
-                  }}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const status = document.getElementById('status-select').value;
-                    handleUpdateStatus(selectedTicket.id, status);
-                  }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  Update
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </DashboardLayout>
   );
 };
 

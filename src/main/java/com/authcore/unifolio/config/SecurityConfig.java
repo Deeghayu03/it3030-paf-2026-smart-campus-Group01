@@ -60,9 +60,15 @@ public class SecurityConfig {
             )
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint((request, response, authException) -> {
-                    response.setContentType("application/json");
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                    String requestUri = request.getRequestURI();
+                    if (requestUri.startsWith("/api/")) {
+                        response.setContentType("application/json");
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \""
+                            + authException.getMessage() + "\"}");
+                    } else {
+                        response.sendRedirect("/oauth2/authorization/google");
+                    }
                 })
             )
             .sessionManagement(session -> session

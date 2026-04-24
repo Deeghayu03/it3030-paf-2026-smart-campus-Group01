@@ -1,119 +1,220 @@
 package com.authcore.unifolio.service;
 
-import com.authcore.unifolio.entity.Ticket;
-import com.authcore.unifolio.entity.TicketComment;
-import com.authcore.unifolio.entity.TicketAttachment;
-import com.authcore.unifolio.entity.User;
-import com.authcore.unifolio.repo.TicketRepository;
-import com.authcore.unifolio.repo.TicketCommentRepository;
-import com.authcore.unifolio.repo.TicketAttachmentRepository;
-import com.authcore.unifolio.dto.TicketDTO;
-import com.authcore.unifolio.dto.CommentDTO;
-import lombok.RequiredArgsConstructor;
+import com.authcore.unifolio.dto.*;
+import com.authcore.unifolio.entity.*;
+import com.authcore.unifolio.repo.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Transactional
 public class TicketService {
 
-    private final TicketRepository ticketRepository;
-    private final TicketCommentRepository commentRepository;
-    private final TicketAttachmentRepository attachmentRepository;
+    @Autowired
+    private TicketRepository ticketRepository;
+    @Autowired
+    private CommentRepository commentRepository;
+    @Autowired
+    private TicketAttachmentRepository attachmentRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private ResourceRepository resourceRepository;
+    @Autowired
+    private NotificationService notificationService;
 
-    public List<Ticket> getUserTickets(String userEmail) {
-        return ticketRepository.findByUserEmail(userEmail);
-    }
+    private static final String UPLOAD_DIR = "uploads/tickets/";
 
-    public Ticket createTicket(TicketDTO ticketDTO, User user) {
+    public TicketResponse createTicket(TicketRequest request, String email) {
+        User reportedBy = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
         Ticket ticket = new Ticket();
-        ticket.setReportedBy(user);
-        ticket.setCategory(Ticket.TicketCategory.valueOf(ticketDTO.getCategory().toUpperCase()));
-        ticket.setDescription(ticketDTO.getDescription());
-        ticket.setPriority(Ticket.TicketPriority.valueOf(ticketDTO.getPriority().toUpperCase()));
-        ticket.setResourceName(ticketDTO.getResourceName());
-        ticket.setContactEmail(ticketDTO.getContactEmail());
-        ticket.setContactPhone(ticketDTO.getContactPhone());
-        ticket.setStatus(Ticket.TicketStatus.OPEN);
+        ticket.setReportedBy(reportedBy);
+        ticket.setLocation(request.getLocation());
+        ticket.setDescription(request.getDescription());
+        
+        try {
+            ticket.setPriority(Ticket.TicketPriority.valueOf(request.getPriority()));
+        } catch(Exception e) {
+            ticket.setPriority(Ticket.TicketPriority.MEDIUM);
+        }
+        
+        if (request.getResourceId() != null) {
+            resourceRepository.findById(request.getResourceId()).ifPresent(ticket::setResource);
+        }
+        
+        // Field missing in Entity but requested by prompt context mapping skipped: category, contactDetails
+        
+        Ticket savedTicket = ticketRepository.save(ticket);
 
-        return ticketRepository.save(ticket);
+        if (savedTicket.getPriority() == Ticket.TicketPriority.CRITICAL) {
+            List<User> admins = userRepository.findByRole(User.Role.ADMIN);
+            for (User admin : admins) {
+                notificationService.createNotification(admin, "Critical Ticket Reported: " + savedTicket.getId(),
+                        Notification.NotificationType.TICKET_UPDATED, savedTicket.getId(), "TICKET");
+            }
+        }
+        return mapToResponse(savedTicket);
     }
 
-    public Ticket addComment(Long ticketId, CommentDTO commentDTO, User user) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+    public List<TicketResponse> getMyTickets(String email) {
+        return ticketRepository.findByReportedByEmailOrderByCreatedAtDesc(email)
+                .stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
 
-        // Verify user owns the ticket
-        if (!ticket.getReportedBy().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+    public List<TicketResponse> getAllTickets() {
+        return ticketRepository.findAll()
+                .stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    public TicketResponse getTicketDetail(Long id, String email) {
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new RuntimeException("Ticket not found"));
+        return mapToResponseDetail(ticket);
+    }
+
+    public TicketResponse updateStatus(Long id, StatusUpdateRequest request, String email) {
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(() -> new RuntimeException("Ticket not found"));
+        boolean statusChanged = false;
+        
+        if (request.getStatus() != null) {
+            try {
+                ticket.setStatus(Ticket.TicketStatus.valueOf(request.getStatus()));
+                statusChanged = true;
+            } catch(Exception ignored) {}
+        }
+        if (request.getResolutionNotes() != null) ticket.setResolutionNotes(request.getResolutionNotes());
+        if (request.getRejectionReason() != null) ticket.setRejectionReason(request.getRejectionReason());
+
+        if (request.getAssignedToEmail() != null && !request.getAssignedToEmail().isEmpty()) {
+            userRepository.findByEmail(request.getAssignedToEmail()).ifPresent(tech -> {
+                ticket.setAssignedTo(tech);
+                notificationService.createNotification(tech, "You have been assigned to Ticket: " + ticket.getId(),
+                        Notification.NotificationType.TICKET_ASSIGNED, ticket.getId(), "TICKET");
+            });
         }
 
-        TicketComment comment = new TicketComment();
+        Ticket savedTicket = ticketRepository.save(ticket);
+        
+        if (statusChanged) {
+             notificationService.createNotification(savedTicket.getReportedBy(), "Ticket " + ticket.getId() + " status updated",
+                    Notification.NotificationType.TICKET_UPDATED, savedTicket.getId(), "TICKET");
+        }
+        return mapToResponse(savedTicket);
+    }
+
+    public CommentResponse addComment(Long ticketId, CommentRequest request, String email) {
+        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new RuntimeException("Ticket not found"));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+        Comment comment = new Comment();
         comment.setTicket(ticket);
-        comment.setAuthor(user);
-        comment.setMessage(commentDTO.getMessage());
+        comment.setUser(user);
+        comment.setContent(request.getContent());
+        Comment savedComment = commentRepository.save(comment);
 
-        commentRepository.save(comment);
-        
-        // Update ticket timestamp
-        ticket.setUpdatedAt(LocalDateTime.now());
-        return ticketRepository.save(ticket);
-    }
-
-    public Ticket getTicket(Long ticketId, User user) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
-
-        // Verify user owns the ticket
-        if (!ticket.getReportedBy().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
-        }
-
-        return ticket;
-    }
-
-    public Ticket getTicketById(Long ticketId) {
-        return ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
-    }
-
-    public void addAttachment(Long ticketId, MultipartFile file) throws IOException {
-        Ticket ticket = getTicketById(ticketId);
-        
-        // Create upload directory if it doesn't exist
-        Path uploadPath = Paths.get("uploads/tickets");
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
+        if (!user.getEmail().equals(ticket.getReportedBy().getEmail())) {
+            notificationService.createNotification(ticket.getReportedBy(), "New comment on your ticket",
+                    Notification.NotificationType.NEW_COMMENT, ticket.getId(), "TICKET");
         }
         
-        // Generate unique filename
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = originalFilename != null ? 
-            originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
-        String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
-        
-        // Save file to disk
-        Path filePath = uploadPath.resolve(uniqueFilename);
-        Files.copy(file.getInputStream(), filePath);
-        
-        // Create attachment record
-        TicketAttachment attachment = new TicketAttachment();
-        attachment.setTicket(ticket);
-        attachment.setFileName(originalFilename);
-        attachment.setFilePath("uploads/tickets/" + uniqueFilename);
-        attachment.setFileType(file.getContentType());
-        attachment.setFileSize(file.getSize());
-        
-        attachmentRepository.save(attachment);
+        CommentResponse resp = new CommentResponse();
+        resp.setId(savedComment.getId());
+        resp.setUserEmail(user.getEmail());
+        resp.setUserName(user.getName());
+        resp.setContent(savedComment.getContent());
+        resp.setCreatedAt(savedComment.getCreatedAt());
+        return resp;
+    }
+
+    public List<String> uploadAttachments(Long ticketId, MultipartFile[] files, String email) {
+        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new RuntimeException("Ticket not found"));
+        long currentCount = attachmentRepository.countByTicketId(ticketId);
+        if (currentCount + files.length > 3) {
+            throw new RuntimeException("Maximum 3 attachments allowed per ticket");
+        }
+
+        Path uploadPath = Paths.get(UPLOAD_DIR);
+        try {
+            if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create upload folder");
+        }
+
+        for (MultipartFile file : files) {
+            try {
+                String originalFilename = file.getOriginalFilename();
+                String ext = originalFilename != null && originalFilename.contains(".") ? originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
+                String uniqueFilename = UUID.randomUUID().toString() + ext;
+                Path filePath = uploadPath.resolve(uniqueFilename);
+                Files.copy(file.getInputStream(), filePath);
+
+                TicketAttachment attachment = new TicketAttachment();
+                attachment.setTicket(ticket);
+                attachment.setFilePath("/api/files/download/" + uniqueFilename);
+                attachment.setFileName(originalFilename);
+                attachment.setFileType(file.getContentType());
+                attachmentRepository.save(attachment);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to store file");
+            }
+        }
+        return attachmentRepository.findByTicketId(ticketId).stream().map(TicketAttachment::getFilePath).collect(Collectors.toList());
+    }
+
+    public void deleteAttachment(Long attachmentId, String email) {
+        TicketAttachment attachment = attachmentRepository.findById(attachmentId).orElseThrow(() -> new RuntimeException("Attachment not found"));
+        try {
+            String filename = attachment.getFilePath().substring(attachment.getFilePath().lastIndexOf("/") + 1);
+            Path filePath = Paths.get(UPLOAD_DIR).resolve(filename);
+            Files.deleteIfExists(filePath);
+        } catch (IOException ignored) {}
+        attachmentRepository.delete(attachment);
+    }
+
+    private TicketResponse mapToResponse(Ticket ticket) {
+        TicketResponse dto = new TicketResponse();
+        dto.setId(ticket.getId());
+        if (ticket.getReportedBy() != null) {
+            dto.setReportedByEmail(ticket.getReportedBy().getEmail());
+            dto.setReportedByName(ticket.getReportedBy().getName());
+        }
+        if (ticket.getAssignedTo() != null) {
+            dto.setAssignedToEmail(ticket.getAssignedTo().getEmail());
+            dto.setAssignedToName(ticket.getAssignedTo().getName());
+        }
+        dto.setLocation(ticket.getLocation());
+        dto.setDescription(ticket.getDescription());
+        dto.setPriority(ticket.getPriority() != null ? ticket.getPriority().name() : null);
+        dto.setStatus(ticket.getStatus() != null ? ticket.getStatus().name() : null);
+        dto.setResolutionNotes(ticket.getResolutionNotes());
+        dto.setRejectionReason(ticket.getRejectionReason());
+        dto.setCreatedAt(ticket.getCreatedAt());
+        dto.setUpdatedAt(ticket.getUpdatedAt());
+        return dto;
+    }
+
+    private TicketResponse mapToResponseDetail(Ticket ticket) {
+        TicketResponse dto = mapToResponse(ticket);
+        List<CommentResponse> comments = commentRepository.findByTicketIdOrderByCreatedAtAsc(ticket.getId()).stream().map(c -> {
+            CommentResponse cr = new CommentResponse();
+            cr.setId(c.getId());
+            cr.setUserEmail(c.getUser().getEmail());
+            cr.setUserName(c.getUser().getName());
+            cr.setContent(c.getContent());
+            cr.setCreatedAt(c.getCreatedAt());
+            return cr;
+        }).collect(Collectors.toList());
+        dto.setComments(comments);
+
+        List<String> paths = attachmentRepository.findByTicketId(ticket.getId()).stream()
+                .map(TicketAttachment::getFilePath).collect(Collectors.toList());
+        dto.setAttachmentPaths(paths);
+        return dto;
     }
 }

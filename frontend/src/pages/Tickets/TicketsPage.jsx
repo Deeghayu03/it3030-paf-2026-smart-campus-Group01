@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
+import api from '../../api/axiosConfig';
+import ticketService from '../../services/ticketService';
 import './TicketsPage.css';
+
+const CATEGORIES = [
+  { value: 'ELECTRICAL', label: 'Electrical' },
+  { value: 'PLUMBING', label: 'Plumbing' },
+  { value: 'IT_EQUIPMENT', label: 'IT Equipment' },
+  { value: 'FURNITURE', label: 'Furniture' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+const CATEGORY_TO_TYPE = {
+  'ELECTRICAL': null,
+  'PLUMBING': null,
+  'IT_EQUIPMENT': 'EQUIPMENT',
+  'FURNITURE': 'EQUIPMENT',
+  'OTHER': null
+};
 
 const TicketsPage = () => {
   const [tickets, setTickets] = useState([]);
@@ -11,16 +29,17 @@ const TicketsPage = () => {
   const [loading, setLoading] = useState(true);
   
   // Form states
-  const [category, setCategory] = useState('EQUIPMENT');
+  const [category, setCategory] = useState('IT_EQUIPMENT');
   const [priority, setPriority] = useState('MEDIUM');
   const [description, setDescription] = useState('');
-  const [resourceName, setResourceName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
+  const [location, setLocation] = useState('');
+  const [resourceId, setResourceId] = useState('');
+  const [contactDetails, setContactDetails] = useState('');
   const [commentText, setCommentText] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [availableResources, setAvailableResources] = useState([]);
+  const [allResources, setAllResources] = useState([]);
+  const [filteredResources, setFilteredResources] = useState([]);
 
   const formatTime = (dateString) => {
     if (!dateString) return 'N/A';
@@ -45,88 +64,40 @@ const TicketsPage = () => {
 
   useEffect(() => {
     loadTickets();
+    const loadResources = async () => {
+      try {
+        const response = await api.get('/resources');
+        setAllResources(response.data);
+      } catch (err) {
+        console.error('Failed to load resources:', err);
+      }
+    };
+    loadResources();
   }, []);
 
   useEffect(() => {
-    loadResourcesByCategory();
-  }, [category]);
+    setResourceId('');
+    
+    if (!category) {
+      setFilteredResources([]);
+      return;
+    }
+    
+    const typeFilter = CATEGORY_TO_TYPE[category];
+    if (typeFilter === null) {
+      setFilteredResources(allResources);
+    } else {
+      setFilteredResources(
+        allResources.filter(r => r.type === typeFilter)
+      );
+    }
+  }, [category, allResources]);
 
   const loadTickets = async () => {
     try {
       setLoading(true);
-      
-      // Try to load from real API endpoint
-      try {
-        const response = await fetch('http://localhost:8080/api/tickets', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setTickets(data);
-          return;
-        }
-      } catch (apiError) {
-        console.log('API not available, using mock data');
-      }
-      
-      // Fallback to mock data
-      const mockTickets = [
-        {
-          id: 1,
-          category: 'EQUIPMENT',
-          description: 'Projector not working in Conference Room A',
-          priority: 'HIGH',
-          status: 'OPEN',
-          resourceName: 'Projector - Epson EB-X41',
-          contactEmail: 'user@campus.edu',
-          contactPhone: '+1234567890',
-          assignedTo: null,
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          comments: []
-        },
-        {
-          id: 2,
-          category: 'FACILITY',
-          description: 'Air conditioning not working in Lab 201',
-          priority: 'MEDIUM',
-          status: 'IN_PROGRESS',
-          resourceName: 'Air Conditioning - Lab 201',
-          contactEmail: 'staff@campus.edu',
-          contactPhone: '+0987654321',
-          assignedTo: {
-            name: 'Mike Johnson',
-            email: 'tech@campus.edu'
-          },
-          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          comments: []
-        },
-        {
-          id: 3,
-          category: 'NETWORK',
-          description: 'WiFi connection issues in Library',
-          priority: 'LOW',
-          status: 'RESOLVED',
-          resourceName: 'WiFi - Library',
-          contactEmail: 'student@campus.edu',
-          contactPhone: '+1122334455',
-          assignedTo: {
-            name: 'Sarah Wilson',
-            email: 'network@campus.edu'
-          },
-          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-          comments: []
-        }
-      ];
-      
-      setTickets(mockTickets);
-      
+      const response = await ticketService.getMyTickets();
+      setTickets(response.data);
     } catch (error) {
       console.error('Error loading tickets:', error);
       setTickets([]);
@@ -144,70 +115,44 @@ const TicketsPage = () => {
     }
   };
 
-  const loadResourcesByCategory = async () => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/tickets/resources/${category}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableResources(data);
-      }
-    } catch (error) {
-      console.error('Error loading resources:', error);
-      setAvailableResources([]);
-    }
-  };
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
     
+    const isResourceRequired = ['IT_EQUIPMENT', 'FURNITURE'].includes(category);
+    if (isResourceRequired && !resourceId) {
+      alert('Please select a resource for this category.');
+      return;
+    }
+    
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      
-      // Add ticket data as JSON
       const ticketData = {
+        location,
         category,
         description,
         priority,
-        resourceId: "resource1",
-        resourceName,
-        contactEmail: contactEmail || localStorage.getItem('email') || 'user@campus.edu',
-        contactPhone: contactPhone || '+1234567890'
+        contactDetails,
+        resourceId: resourceId || null
       };
-      formData.append('ticket', JSON.stringify(ticketData));
       
-      // Add files if any
-      selectedImages.forEach(file => {
-        formData.append('files', file);
-      });
+      const response = await ticketService.createTicket(ticketData);
+      const ticketId = response.data.id;
       
-      const response = await fetch('http://localhost:8080/api/tickets', {
-        method: 'POST',
-        body: formData // Don't set Content-Type header for FormData
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setTickets([...tickets, data]);
-        resetForm();
-        setShowCreateModal(false);
-        alert('Ticket created successfully!');
-        // Reload tickets to get latest data
-        loadTickets();
-      } else {
-        const errorText = await response.text();
-        console.error('Error creating ticket:', errorText);
-        alert('Error creating ticket: ' + errorText);
+      if (selectedImages.length > 0) {
+        const formData = new FormData();
+        selectedImages.forEach(file => {
+          formData.append('files', file);
+        });
+        await ticketService.uploadAttachments(ticketId, formData);
       }
+      
+      resetForm();
+      setShowCreateModal(false);
+      alert('Ticket created successfully!');
+      loadTickets();
     } catch (error) {
       console.error('Error creating ticket:', error);
-      alert('Error creating ticket: ' + error.message);
+      alert('Error creating ticket: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -217,9 +162,8 @@ const TicketsPage = () => {
       category,
       description,
       priority,
-      resourceName,
-      contactEmail: contactEmail || localStorage.getItem('email'),
-      contactPhone: contactPhone || '+1234567890',
+      resourceId,
+      contactDetails,
       status: 'OPEN',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -248,32 +192,14 @@ const TicketsPage = () => {
     }
     
     try {
-      const response = await fetch(`http://localhost:8080/api/tickets/${selectedTicket.id}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: commentText.trim(),
-          authorName: localStorage.getItem('userName') || 'User'
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCommentText('');
-        setShowCommentModal(false);
-        alert('Comment added successfully!');
-        // Reload tickets to get latest data
-        loadTickets();
-      } else {
-        const errorText = await response.text();
-        console.error('Error adding comment:', errorText);
-        alert('Error adding comment: ' + errorText);
-      }
+      await ticketService.addComment(selectedTicket.id, commentText.trim());
+      setCommentText('');
+      setShowCommentModal(false);
+      alert('Comment added successfully!');
+      loadTickets();
     } catch (error) {
       console.error('Error adding comment:', error);
-      alert('Error adding comment: ' + error.message);
+      alert('Error adding comment: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -325,12 +251,12 @@ const TicketsPage = () => {
   };
 
   const resetForm = () => {
-    setCategory('EQUIPMENT');
+    setCategory('IT_EQUIPMENT');
     setPriority('MEDIUM');
     setDescription('');
-    setResourceName('');
-    setContactEmail('');
-    setContactPhone('');
+    setLocation('');
+    setResourceId('');
+    setContactDetails('');
     setSelectedImages([]);
     setImagePreviews([]);
   };
@@ -407,7 +333,7 @@ const TicketsPage = () => {
                   <div className="ticket-description">{ticket.description}</div>
                   
                   <div className="ticket-category">Category: {ticket.category}</div>
-                  <div className="ticket-resource">Resource: {ticket.resourceName}</div>
+                  <div className="ticket-resource">Location: {ticket.location}</div>
                   <div className="ticket-priority">Priority: {ticket.priority}</div>
                   
                   <div className="ticket-date">
@@ -453,10 +379,9 @@ const TicketsPage = () => {
                 <div className="form-group">
                   <label>Category</label>
                   <select value={category} onChange={(e) => setCategory(e.target.value)} required>
-                    <option value="EQUIPMENT">Equipment</option>
-                    <option value="FACILITY">Facility</option>
-                    <option value="NETWORK">Network</option>
-                    <option value="OTHER">Other</option>
+                    {CATEGORIES.map(cat => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
                   </select>
                 </div>
                 
@@ -471,54 +396,28 @@ const TicketsPage = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label>Resource Name</label>
-                  <select 
-                    value={resourceName}
-                    onChange={(e) => setResourceName(e.target.value)}
+                  <label>Location</label>
+                  <input 
+                    type="text" 
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Admin Building Room 104"
                     required 
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>{['IT_EQUIPMENT', 'FURNITURE'].includes(category) ? 'Resource (Required)' : 'Resource (Optional)'}</label>
+                  <select 
+                    value={resourceId}
+                    onChange={(e) => setResourceId(e.target.value)}
                   >
-                    <option value="">Select a resource...</option>
-                    {category === 'EQUIPMENT' && (
-                      <>
-                        <option value="Projector - Epson EB-X41">Projector - Epson EB-X41</option>
-                        <option value="Laptop - Dell Latitude 5420">Laptop - Dell Latitude 5420</option>
-                        <option value="Printer - HP LaserJet Pro">Printer - HP LaserJet Pro</option>
-                        <option value="Scanner - Canon CanoScan">Scanner - Canon CanoScan</option>
-                        <option value="Whiteboard - Mobile">Whiteboard - Mobile</option>
-                        <option value="Microphone - Shure SM58">Microphone - Shure SM58</option>
-                        <option value="Camera - Sony PXW-X70">Camera - Sony PXW-X70</option>
-                        <option value="Monitor - Dell 24&quot;">Monitor - Dell 24"</option>
-                        <option value="Keyboard - Logitech MX Keys">Keyboard - Logitech MX Keys</option>
-                        <option value="Mouse - Logitech MX Master">Mouse - Logitech MX Master</option>
-                        <option value="Tablet - iPad Pro">Tablet - iPad Pro</option>
-                      </>
-                    )}
-                    {category === 'FACILITY' && (
-                      <>
-                        <option value="Air Conditioning - Lab 201">Air Conditioning - Lab 201</option>
-                        <option value="Lighting - Classroom 101">Lighting - Classroom 101</option>
-                        <option value="Plumbing - Restroom Block A">Plumbing - Restroom Block A</option>
-                        <option value="Electrical - Main Building">Electrical - Main Building</option>
-                        <option value="Elevator - Tower Block">Elevator - Tower Block</option>
-                      </>
-                    )}
-                    {category === 'NETWORK' && (
-                      <>
-                        <option value="WiFi - Library">WiFi - Library</option>
-                        <option value="Ethernet - Lab 201">Ethernet - Lab 201</option>
-                        <option value="VPN Access">VPN Access</option>
-                        <option value="Email Server">Email Server</option>
-                        <option value="File Server">File Server</option>
-                      </>
-                    )}
-                    {category === 'OTHER' && (
-                      <>
-                        <option value="General Inquiry">General Inquiry</option>
-                        <option value="Software Issue">Software Issue</option>
-                        <option value="Account Access">Account Access</option>
-                        <option value="Campus Services">Campus Services</option>
-                      </>
-                    )}
+                    <option value="">-- Select Resource --</option>
+                    {filteredResources.map((resource) => (
+                      <option key={resource.id} value={resource.id}>
+                        {resource.name} - {resource.location}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 
@@ -533,24 +432,13 @@ const TicketsPage = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label>Contact Email</label>
-                  <input 
-                    type="email" 
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="your.email@campus.edu"
-                    required 
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Contact Phone</label>
-                  <input 
-                    type="tel" 
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="+1234567890"
-                    required 
+                  <label>Contact Details</label>
+                  <textarea
+                    placeholder="Enter your contact information (email, phone, or both)..."
+                    value={contactDetails}
+                    onChange={(e) => setContactDetails(e.target.value)}
+                    rows={2}
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                   />
                 </div>
                 
@@ -646,8 +534,8 @@ const TicketsPage = () => {
                       <div className="info-value">{selectedTicket.category}</div>
                     </div>
                     <div className="info-item">
-                      <label>Resource</label>
-                      <div className="info-value">{selectedTicket.resourceName}</div>
+                      <label>Location</label>
+                      <div className="info-value">{selectedTicket.location}</div>
                     </div>
                   </div>
                 </div>

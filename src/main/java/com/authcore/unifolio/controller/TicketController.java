@@ -1,133 +1,104 @@
 package com.authcore.unifolio.controller;
 
+import com.authcore.unifolio.dto.*;
 import com.authcore.unifolio.entity.Ticket;
-import com.authcore.unifolio.entity.TicketComment;
 import com.authcore.unifolio.entity.User;
-import com.authcore.unifolio.entity.Resource;
 import com.authcore.unifolio.repo.TicketRepository;
-import com.authcore.unifolio.repo.TicketCommentRepository;
-import com.authcore.unifolio.repo.ResourceRepository;
-import com.authcore.unifolio.dto.TicketDTO;
-import com.authcore.unifolio.dto.CommentDTO;
+import com.authcore.unifolio.repo.UserRepository;
 import com.authcore.unifolio.service.TicketService;
-import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.validation.Valid;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tickets")
-@RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:*"})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"}, allowCredentials = "true")
 public class TicketController {
 
-    private final TicketService ticketService;
-    private final ResourceRepository resourceRepository;
+    @Autowired
+    private TicketService ticketService;
 
-    // Get current user's tickets
-    @GetMapping("/my-tickets")
-    public ResponseEntity<List<Ticket>> getMyTickets(@AuthenticationPrincipal User user) {
-        try {
-            List<Ticket> tickets = ticketService.getUserTickets(user.getEmail());
-            return ResponseEntity.ok(tickets);
-        } catch (Exception e) {
-            System.err.println("Error in getMyTickets: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest().build();
-        }
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TicketRepository ticketRepository;
+
+    @PostMapping
+    public ResponseEntity<TicketResponse> createTicket(@RequestBody @Valid TicketRequest request, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.createTicket(request, authentication.getName()));
     }
 
-    // Create a new ticket with file attachments
-    @PostMapping(consumes = "multipart/form-data")
-    public ResponseEntity<Ticket> createTicketWithFiles(
-            @RequestPart("ticket") String ticketDTOJson,
-            @RequestPart(value = "files", required = false) List<MultipartFile> files,
-            @AuthenticationPrincipal User user) {
-        
-        try {
-            // Convert JSON to TicketDTO
-            TicketDTO ticketDTO = new com.fasterxml.jackson.databind.ObjectMapper().readValue(ticketDTOJson, TicketDTO.class);
-            
-            Ticket ticket = ticketService.createTicket(ticketDTO, user);
-            
-            // Handle file attachments if provided
-            if (files != null && !files.isEmpty()) {
-                for (MultipartFile file : files) {
-                    if (!file.isEmpty()) {
-                        ticketService.addAttachment(ticket.getId(), file);
-                    }
-                }
-                // Reload ticket with attachments
-                ticket = ticketService.getTicketById(ticket.getId());
-            }
-            
-            return ResponseEntity.ok(ticket);
-        } catch (Exception e) {
-            System.err.println("Error in createTicketWithFiles: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest().build();
-        }
+    @GetMapping("/my")
+    public ResponseEntity<List<TicketResponse>> getMyTickets(Authentication authentication) {
+        return ResponseEntity.ok(ticketService.getMyTickets(authentication.getName()));
     }
 
-    // Create a new ticket (JSON only, for compatibility)
-    @PostMapping(consumes = "application/json")
-    public ResponseEntity<Ticket> createTicket(
-            @Valid @RequestBody TicketDTO ticketDTO,
-            @AuthenticationPrincipal User user) {
-        
-        Ticket ticket = ticketService.createTicket(ticketDTO, user);
-        return ResponseEntity.ok(ticket);
-    }
-
-    // Add comment to a ticket
-    @PostMapping("/{id}/comments")
-    public ResponseEntity<Ticket> addComment(
-            @PathVariable Long id,
-            @Valid @RequestBody CommentDTO commentDTO,
-            @AuthenticationPrincipal User user) {
-        
-        Ticket ticket = ticketService.addComment(id, commentDTO, user);
-        return ResponseEntity.ok(ticket);
-    }
-
-    // Get ticket details
     @GetMapping("/{id}")
-    public ResponseEntity<Ticket> getTicket(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        Ticket ticket = ticketService.getTicket(id, user);
-        return ResponseEntity.ok(ticket);
+    public ResponseEntity<TicketResponse> getTicketDetail(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.getTicketDetail(id, authentication.getName()));
     }
 
-    // Get resources by category
-    @GetMapping("/resources/{category}")
-    public ResponseEntity<List<Resource>> getResourcesByCategory(@PathVariable String category) {
-        try {
-            Resource.ResourceType resourceType;
-            switch (category.toUpperCase()) {
-                case "EQUIPMENT":
-                    resourceType = Resource.ResourceType.EQUIPMENT;
-                    break;
-                case "LECTURE_HALL":
-                    resourceType = Resource.ResourceType.LECTURE_HALL;
-                    break;
-                case "LAB":
-                    resourceType = Resource.ResourceType.LAB;
-                    break;
-                case "MEETING_ROOM":
-                    resourceType = Resource.ResourceType.MEETING_ROOM;
-                    break;
-                default:
-                    return ResponseEntity.badRequest().build();
+    @GetMapping
+    public ResponseEntity<List<TicketResponse>> getAllTickets() {
+        return ResponseEntity.ok(ticketService.getAllTickets());
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<TicketResponse> updateStatus(@PathVariable Long id, @RequestBody StatusUpdateRequest request, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.updateStatus(id, request, authentication.getName()));
+    }
+
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<CommentResponse> addComment(@PathVariable Long id, @RequestBody @Valid CommentRequest request, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.addComment(id, request, authentication.getName()));
+    }
+
+    @PostMapping("/{id}/attachments")
+    public ResponseEntity<List<String>> uploadAttachments(@PathVariable Long id, @RequestParam("files") MultipartFile[] files, Authentication authentication) {
+        return ResponseEntity.ok(ticketService.uploadAttachments(id, files, authentication.getName()));
+    }
+
+    @DeleteMapping("/attachments/{attachId}")
+    public ResponseEntity<Void> deleteAttachment(@PathVariable Long attachId, Authentication authentication) {
+        ticketService.deleteAttachment(attachId, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/technician")
+    public ResponseEntity<List<TicketResponse>> getTechnicianTickets(Authentication authentication) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        List<Ticket> tickets = ticketRepository.findByAssignedToOrderByCreatedAtDesc(user);
+        
+        List<TicketResponse> response = tickets.stream().map(t -> {
+            TicketResponse dto = new TicketResponse();
+            dto.setId(t.getId());
+            if (t.getReportedBy() != null) {
+                dto.setReportedByEmail(t.getReportedBy().getEmail());
+                dto.setReportedByName(t.getReportedBy().getName());
             }
-            
-            List<Resource> resources = resourceRepository.findByType(resourceType);
-            return ResponseEntity.ok(resources);
-        } catch (Exception e) {
-            System.err.println("Error in getResourcesByCategory: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
+            if (t.getAssignedTo() != null) {
+                dto.setAssignedToEmail(t.getAssignedTo().getEmail());
+                dto.setAssignedToName(t.getAssignedTo().getName());
+            }
+            dto.setLocation(t.getLocation());
+            dto.setDescription(t.getDescription());
+            dto.setPriority(t.getPriority() != null ? t.getPriority().name() : null);
+            dto.setStatus(t.getStatus() != null ? t.getStatus().name() : null);
+            dto.setResolutionNotes(t.getResolutionNotes());
+            dto.setRejectionReason(t.getRejectionReason());
+            dto.setCreatedAt(t.getCreatedAt());
+            dto.setUpdatedAt(t.getUpdatedAt());
+            return dto;
+        }).collect(Collectors.toList());
+        
+        return ResponseEntity.ok(response);
     }
 }
