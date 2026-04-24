@@ -21,11 +21,11 @@ const AdminTicketsPage = () => {
 
   const [technicians, setTechnicians] = useState([]);
 
+  // Tabs
+  const [activeTab, setActiveTab] = useState('All Tickets');
+
   // Update Form
-  const [updateStatus, setUpdateStatus] = useState('');
   const [updateAssigned, setUpdateAssigned] = useState('');
-  const [updateResNotes, setUpdateResNotes] = useState('');
-  const [updateRejReason, setUpdateRejReason] = useState('');
 
   useEffect(() => {
     const fetchTechnicians = async () => {
@@ -73,27 +73,21 @@ const AdminTicketsPage = () => {
 
     try {
       const payload = {
-        status: updateStatus,
-        assignedToEmail: updateAssigned,
-        resolutionNotes: updateStatus === 'RESOLVED' ? updateResNotes : '',
-        rejectionReason: updateStatus === 'REJECTED' ? updateRejReason : ''
+        assignedToEmail: updateAssigned
       };
       
       await ticketService.updateStatus(selectedTicket.id, payload);
       setShowUpdate(false);
-      alert('Ticket updated successfully!');
+      alert('Technician assigned successfully!');
       loadTickets();
     } catch (err) {
-      alert('Error updating ticket: ' + (err.response?.data?.message || err.message));
+      alert('Error assigning technician: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const openUpdateModal = (ticket) => {
     setSelectedTicket(ticket);
-    setUpdateStatus(ticket.status || 'OPEN');
     setUpdateAssigned(ticket.assignedToEmail || '');
-    setUpdateResNotes(ticket.resolutionNotes || '');
-    setUpdateRejReason(ticket.rejectionReason || '');
     setShowUpdate(true);
   };
 
@@ -105,7 +99,12 @@ const AdminTicketsPage = () => {
         (t.reportedByName && t.reportedByName.toLowerCase().includes(searchLower)) ||
         (t.location && t.location.toLowerCase().includes(searchLower));
     
-    return matchStatus && matchPriority && matchSearch;
+    let matchTab = true;
+    if (activeTab === 'Updated by Technicians') {
+      matchTab = ['IN_PROGRESS', 'RESOLVED', 'REJECTED'].includes(t.status);
+    }
+    
+    return matchStatus && matchPriority && matchSearch && matchTab;
   });
 
   return (
@@ -114,6 +113,21 @@ const AdminTicketsPage = () => {
         <h1 className="page-title">Manage Support Tickets</h1>
         
         {error && <div className="error-banner">{error}</div>}
+
+        <div className="admin-tabs">
+          <button 
+            className={`tab-btn ${activeTab === 'All Tickets' ? 'active' : ''}`}
+            onClick={() => setActiveTab('All Tickets')}
+          >
+            All Tickets
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'Updated by Technicians' ? 'active' : ''}`}
+            onClick={() => setActiveTab('Updated by Technicians')}
+          >
+            Updated by Technicians
+          </button>
+        </div>
 
         <div className="filters-bar">
           <input 
@@ -154,6 +168,7 @@ const AdminTicketsPage = () => {
                   <th>Category</th>
                   <th>Priority</th>
                   <th>Status</th>
+                  {activeTab === 'Updated by Technicians' && <th>Technician Notes</th>}
                   <th>Created At</th>
                   <th>Actions</th>
                 </tr>
@@ -167,20 +182,25 @@ const AdminTicketsPage = () => {
                     <td>{ticket.category}</td>
                     <td><span className={`badge priority-${ticket.priority}`}>{ticket.priority}</span></td>
                     <td><span className={`badge status-${ticket.status}`}>{ticket.status}</span></td>
+                    {activeTab === 'Updated by Technicians' && (
+                      <td className="tech-notes-cell">
+                        {ticket.resolutionNotes && <div className="inline-note res-note"><strong>Res:</strong> {ticket.resolutionNotes}</div>}
+                        {ticket.rejectionReason && <div className="inline-note rej-note"><strong>Rej:</strong> {ticket.rejectionReason}</div>}
+                        {!ticket.resolutionNotes && !ticket.rejectionReason && <span className="text-muted">-</span>}
+                      </td>
+                    )}
                     <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
                     <td className="actions-cell">
                       <button className="btn-view" onClick={() => { setSelectedTicket(ticket); setShowDetails(true); }}>View</button>
-                      {ticket.status !== 'RESOLVED' && 
-                       ticket.status !== 'REJECTED' && 
-                       ticket.status !== 'CLOSED' && (
-                        <button className="btn-edit" onClick={() => openUpdateModal(ticket)}>Update</button>
+                      {ticket.status === 'OPEN' && (!ticket.assignedToEmail || ticket.assignedToEmail === '') && (
+                        <button className="btn-edit" onClick={() => openUpdateModal(ticket)}>Assign</button>
                       )}
                     </td>
                   </tr>
                 ))}
                 {filteredTickets.length === 0 && (
                   <tr>
-                    <td colSpan="8" className="no-data">No tickets found matching filters.</td>
+                    <td colSpan={activeTab === 'Updated by Technicians' ? "9" : "8"} className="no-data">No tickets found matching filters.</td>
                   </tr>
                 )}
               </tbody>
@@ -248,24 +268,15 @@ const AdminTicketsPage = () => {
         {showUpdate && selectedTicket && (
           <div className="modal-overlay">
             <div className="modal-content-card">
-              <h2>Update Ticket #{selectedTicket.id}</h2>
+              <h2>Assign Technician to #{selectedTicket.id}</h2>
               <form onSubmit={handleUpdateStatus} className="update-form">
-                <div className="form-group">
-                  <label>Status</label>
-                  <select value={updateStatus} onChange={e => setUpdateStatus(e.target.value)}>
-                    <option value="OPEN">Open</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="REJECTED">Rejected</option>
-                    <option value="CLOSED">Closed</option>
-                  </select>
-                </div>
                 <div className="form-group">
                   <label>Assign To</label>
                   <select 
                     value={updateAssigned} 
                     onChange={(e) => setUpdateAssigned(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+                    required
                   >
                     <option value="">-- Select Technician --</option>
                     {technicians.map((tech) => (
@@ -275,23 +286,10 @@ const AdminTicketsPage = () => {
                     ))}
                   </select>
                 </div>
-                
-                {updateStatus === 'RESOLVED' && (
-                  <div className="form-group">
-                    <label>Resolution Notes</label>
-                    <textarea value={updateResNotes} onChange={e => setUpdateResNotes(e.target.value)} required />
-                  </div>
-                )}
-                {updateStatus === 'REJECTED' && (
-                  <div className="form-group">
-                    <label>Rejection Reason</label>
-                    <textarea value={updateRejReason} onChange={e => setUpdateRejReason(e.target.value)} required />
-                  </div>
-                )}
 
                 <div className="modal-actions">
                   <button type="button" className="btn-close" onClick={() => setShowUpdate(false)}>Cancel</button>
-                  <button type="submit" className="btn-save">Save Changes</button>
+                  <button type="submit" className="btn-save">Assign Technician</button>
                 </div>
               </form>
             </div>
