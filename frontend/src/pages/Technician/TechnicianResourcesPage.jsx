@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
+import api from '../../api/axiosConfig';
 import './TechnicianResourcesPage.css';
 
 const TechnicianResourcesPage = () => {
@@ -19,13 +19,10 @@ const TechnicianResourcesPage = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
 
-    const API_URL = 'http://localhost:8080/api/resources';
-
-    const fetchResources = async (customFilters = filters) => {
+    const fetchResources = async () => {
         try {
             setLoading(true);
             setError('');
-
             const response = await api.get('/resources');
             setResources(response.data);
         } catch (err) {
@@ -37,7 +34,6 @@ const TechnicianResourcesPage = () => {
 
     useEffect(() => {
         fetchResources();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleFilterChange = (e) => {
@@ -50,20 +46,13 @@ const TechnicianResourcesPage = () => {
 
     const applyFilters = (e) => {
         e.preventDefault();
-        fetchResources(filters);
+        fetchResources();
     };
 
     const clearFilters = () => {
-        const clearedFilters = {
-            type: '',
-            status: '',
-            location: '',
-            minCapacity: '',
-        };
-
-        setFilters(clearedFilters);
+        setFilters({ type: '', status: '', location: '', minCapacity: '' });
         setSearchTerm('');
-        fetchResources(clearedFilters);
+        fetchResources();
     };
 
     const handleStatusChange = async (id, status) => {
@@ -71,21 +60,8 @@ const TechnicianResourcesPage = () => {
             setSavingId(id);
             setError('');
             setMessage('');
-
-            await api.patch(
-                `/resources/${id}/status`,
-                null,
-                {
-                    params: { status }
-                }
-            );
-
-            setResources((prevResources) =>
-                prevResources.map((resource) =>
-                    resource.id === id ? { ...resource, status } : resource
-                )
-            );
-
+            await api.patch(`/resources/${id}/status`, null, { params: { status } });
+            setResources((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
             setMessage('Resource status updated successfully');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to change resource status');
@@ -96,163 +72,135 @@ const TechnicianResourcesPage = () => {
 
     const getStatusClass = (status) => {
         switch (status) {
-            case 'ACTIVE':
-                return 'status-badge active';
-            case 'UNDER_MAINTENANCE':
-                return 'status-badge maintenance';
-            case 'OUT_OF_SERVICE':
-                return 'status-badge out';
-            default:
-                return 'status-badge';
+            case 'ACTIVE': return 'status-badge active';
+            case 'UNDER_MAINTENANCE': return 'status-badge maintenance';
+            case 'OUT_OF_SERVICE': return 'status-badge out';
+            default: return 'status-badge';
         }
     };
 
     const filteredResources = useMemo(() => {
         const search = searchTerm.trim().toLowerCase();
-
         if (!search) return resources;
-
         return resources.filter((resource) => {
             const nameMatch = resource.name?.toLowerCase().includes(search);
             const locationMatch = resource.location?.toLowerCase().includes(search);
-
             return nameMatch || locationMatch;
         });
     }, [resources, searchTerm]);
 
     return (
-        <DashboardLayout title="Technician Resources" notificationCount={2}>
-            <div className="technician-resources-page">
-                <div className="page-header">
-                    <h2>Resource Management</h2>
-                    <p>View, search, filter, and update resource statuses from one place.</p>
-                </div>
+        <>
+            <div className="content-container">
+                <div className="page">
+                    <header className="page-header">
+                        <p>View, search, and update campus resource statuses.</p>
+                    </header>
 
-                {message && <div className="success-message">{message}</div>}
-                {error && <div className="error-message">{error}</div>}
+                    <div className="page-body">
+                        {message && <div className="success-alert"><span className="icon">✓</span> {message}</div>}
+                        {error && <div className="error-alert"><span className="icon">⚠</span> {error}</div>}
 
-                <form className="filters-bar" onSubmit={applyFilters}>
-                    <input
-                        type="text"
-                        placeholder="Search by resource name or location"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
+                        <form className="filters-bar" onSubmit={applyFilters}>
+                            <input
+                                type="text"
+                                placeholder="Search by name or location..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                            />
 
-                    <select
-                        name="type"
-                        value={filters.type}
-                        onChange={handleFilterChange}
-                    >
-                        <option value="">All Types</option>
-                        <option value="LECTURE_HALL">Lecture Hall</option>
-                        <option value="LAB">Lab</option>
-                        <option value="MEETING_ROOM">Meeting Room</option>
-                        <option value="EQUIPMENT">Equipment</option>
-                    </select>
+                            <select name="type" value={filters.type} onChange={handleFilterChange}>
+                                <option value="">All Types</option>
+                                <option value="LECTURE_HALL">Lecture Hall</option>
+                                <option value="LAB">Lab</option>
+                                <option value="MEETING_ROOM">Meeting Room</option>
+                                <option value="EQUIPMENT">Equipment</option>
+                            </select>
 
-                    <select
-                        name="status"
-                        value={filters.status}
-                        onChange={handleFilterChange}
-                    >
-                        <option value="">All Status</option>
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="UNDER_MAINTENANCE">UNDER MAINTENANCE</option>
-                        <option value="OUT_OF_SERVICE">OUT OF SERVICE</option>
-                    </select>
+                            <select name="status" value={filters.status} onChange={handleFilterChange}>
+                                <option value="">All Status</option>
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="UNDER_MAINTENANCE">UNDER MAINTENANCE</option>
+                                <option value="OUT_OF_SERVICE">OUT OF SERVICE</option>
+                            </select>
 
-                    <input
-                        type="text"
-                        name="location"
-                        placeholder="Filter by location"
-                        value={filters.location}
-                        onChange={handleFilterChange}
-                    />
+                            <input
+                                type="text"
+                                name="location"
+                                placeholder="Filter by location"
+                                value={filters.location}
+                                onChange={handleFilterChange}
+                            />
 
-                    <input
-                        type="number"
-                        name="minCapacity"
-                        placeholder="Minimum capacity"
-                        value={filters.minCapacity}
-                        onChange={handleFilterChange}
-                        min="1"
-                    />
+                            <button type="submit" className="filter-btn">Apply</button>
+                            <button type="button" className="clear-btn" onClick={clearFilters}>Clear</button>
+                        </form>
 
-                    <button type="submit" className="filter-btn">
-                        Apply Filters
-                    </button>
-
-                    <button
-                        type="button"
-                        className="clear-btn"
-                        onClick={clearFilters}
-                    >
-                        Clear
-                    </button>
-                </form>
-
-                {loading ? (
-                    <div className="loading-box">Loading resources...</div>
-                ) : filteredResources.length === 0 ? (
-                    <div className="empty-box">No resources found.</div>
-                ) : (
-                    <div className="table-wrapper">
-                        <table className="resources-table">
-                            <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Location</th>
-                                <th>Capacity</th>
-                                <th>Available From</th>
-                                <th>Available To</th>
-                                <th>Current Status</th>
-                                <th>Change Status</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {filteredResources.map((resource) => (
-                                <tr key={resource.id}>
-                                    <td>{resource.name}</td>
-                                    <td>{resource.type}</td>
-                                    <td>{resource.location}</td>
-                                    <td>{resource.capacity ?? '-'}</td>
-                                    <td>{resource.availableFrom}</td>
-                                    <td>{resource.availableTo}</td>
-                                    <td>
-                                            <span className={getStatusClass(resource.status)}>
-                                                {resource.status?.replaceAll('_', ' ')}
-                                            </span>
-                                    </td>
-                                    <td>
-                                        <select
-                                            className="status-dropdown"
-                                            value={resource.status || 'ACTIVE'}
-                                            disabled={savingId === resource.id}
-                                            onChange={(e) =>
-                                                handleStatusChange(resource.id, e.target.value)
-                                            }
-                                        >
-                                            <option value="ACTIVE">ACTIVE</option>
-                                            <option value="UNDER_MAINTENANCE">
-                                                UNDER MAINTENANCE
-                                            </option>
-                                            <option value="OUT_OF_SERVICE">
-                                                OUT OF SERVICE
-                                            </option>
-                                        </select>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
+                        {loading ? (
+                            <div className="loading-container">
+                                <div className="spinner"></div>
+                                <p>Loading resources...</p>
+                            </div>
+                        ) : filteredResources.length === 0 ? (
+                            <div className="empty-state">
+                                <div className="empty-icon">📂</div>
+                                <h3>No resources available</h3>
+                                <p>We couldn't find any resources matching your search or filters.</p>
+                                <button className="clear-btn" onClick={clearFilters}>Clear all filters</button>
+                            </div>
+                        ) : (
+                            <div className="table-wrapper">
+                                <table className="resources-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Location</th>
+                                            <th>Capacity</th>
+                                            <th>Available From</th>
+                                            <th>Available To</th>
+                                            <th>Current Status</th>
+                                            <th>Change Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredResources.map((resource) => (
+                                            <tr key={resource.id}>
+                                                <td className="font-bold">{resource.name}</td>
+                                                <td><span className="type-badge">{resource.type?.replaceAll('_', ' ')}</span></td>
+                                                <td>{resource.location}</td>
+                                                <td>{resource.capacity ?? '-'}</td>
+                                                <td>{resource.availableFrom}</td>
+                                                <td>{resource.availableTo}</td>
+                                                <td>
+                                                    <span className={getStatusClass(resource.status)}>
+                                                        {resource.status?.replaceAll('_', ' ')}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <select
+                                                        className="status-dropdown"
+                                                        value={resource.status || 'ACTIVE'}
+                                                        disabled={savingId === resource.id}
+                                                        onChange={(e) => handleStatusChange(resource.id, e.target.value)}
+                                                    >
+                                                        <option value="ACTIVE">ACTIVE</option>
+                                                        <option value="UNDER_MAINTENANCE">UNDER MAINTENANCE</option>
+                                                        <option value="OUT_OF_SERVICE">OUT OF SERVICE</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 };
 
-export default TechnicianResourcesPage;
+export default TechnicianResourcesPage;
