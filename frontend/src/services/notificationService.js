@@ -15,3 +15,19 @@ export const markAsRead = (id) => {
 export const markAllAsRead = () => {
   return api.put('/notifications/read-all');
 };
+
+export const deleteNotification = (id) => {
+  return api.delete(`/notifications/${id}`);
+};
+
+export const clearReadNotifications = () => {
+  return api.delete('/notifications/clear-read');
+};
+
+export const getPreferences = () => {
+  return api.get('/notifications/preferences');
+};
+
+export const togglePreference = (category) => {
+  return api.put(`/notifications/preferences/${category}/toggle`);
+};
