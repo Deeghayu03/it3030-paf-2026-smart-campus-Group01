@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ROUTES } from './constants/routes';
 
@@ -20,11 +20,37 @@ import AdminResourcesPage from './pages/Resources/AdminResourcesPage';
 import TechnicianDashboardPage from './pages/Technician/TechnicianDashboardPage';
 import TechnicianResourcesPage from './pages/Technician/TechnicianResourcesPage';
 import TechnicianTicketsPage from './pages/Technician/TechnicianTicketsPage';
+import DashboardLayout from './components/layout/DashboardLayout/DashboardLayout';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  return isAuthenticated ? children : <Navigate to={ROUTES.LOGIN} replace />;
+  return isAuthenticated ? (children || <Outlet />) : <Navigate to={ROUTES.LOGIN} replace />;
 };
+
+// Layout Wrappers for persistent sidebar
+const StudentLayout = () => (
+  <ProtectedRoute>
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
+  </ProtectedRoute>
+);
+
+const AdminLayout = () => (
+  <ProtectedRoute>
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
+  </ProtectedRoute>
+);
+
+const TechnicianLayout = () => (
+  <ProtectedRoute>
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
+  </ProtectedRoute>
+);
 
 const App = () => {
   return (
@@ -39,52 +65,31 @@ const App = () => {
           <Route path="/complete-profile" element={<CompleteProfilePage />} />
 
           {/* Student Routes */}
-          <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path={ROUTES.RESOURCES} element={<ProtectedRoute><ResourcesPage /></ProtectedRoute>} />
-          <Route path={ROUTES.BOOKINGS} element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
-          <Route path={ROUTES.TICKETS} element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
-          <Route path={ROUTES.NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+          <Route element={<StudentLayout />}>
+            <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+            <Route path={ROUTES.RESOURCES} element={<ResourcesPage />} />
+            <Route path={ROUTES.BOOKINGS} element={<BookingsPage />} />
+            <Route path={ROUTES.TICKETS} element={<TicketsPage />} />
+            <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
+          </Route>
 
           {/* Admin Routes */}
-          <Route path={ROUTES.ADMIN_DASHBOARD} element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
-          <Route path={ROUTES.ADMIN_USERS} element={<ProtectedRoute><ManageUsersPage /></ProtectedRoute>} />
-          <Route path={ROUTES.ADMIN_RESOURCES} element={<ProtectedRoute><AdminResourcesPage /></ProtectedRoute>} />
-          <Route path={ROUTES.ADMIN_BOOKINGS} element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
-          <Route path={ROUTES.ADMIN_TICKETS} element={<ProtectedRoute><AdminTicketsPage /></ProtectedRoute>} />
-          <Route path={ROUTES.ADMIN_NOTIFICATIONS} element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+          <Route element={<AdminLayout />}>
+            <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboardPage />} />
+            <Route path={ROUTES.ADMIN_USERS} element={<ManageUsersPage />} />
+            <Route path={ROUTES.ADMIN_RESOURCES} element={<AdminResourcesPage />} />
+            <Route path={ROUTES.ADMIN_BOOKINGS} element={<BookingsPage />} />
+            <Route path={ROUTES.ADMIN_TICKETS} element={<AdminTicketsPage />} />
+            <Route path={ROUTES.ADMIN_NOTIFICATIONS} element={<NotificationsPage />} />
+          </Route>
 
-            <Route
-                path={ROUTES.TECHNICIAN_DASHBOARD}
-                element={
-                  <ProtectedRoute>
-                    <TechnicianDashboardPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.TECHNICIAN_TICKETS}
-                element={
-                  <ProtectedRoute>
-                    <TechnicianTicketsPage />
-                  </ProtectedRoute>
-                }
-            />
-            <Route
-                path={ROUTES.TECHNICIAN_NOTIFICATIONS}
-                element={
-                  <ProtectedRoute>
-                    <NotificationsPage />
-                  </ProtectedRoute>
-                }
-            />
-              <Route
-                  path={ROUTES.TECHNICIAN_RESOURCES}
-                  element={
-                      <ProtectedRoute>
-                          <TechnicianResourcesPage />
-                      </ProtectedRoute>
-                  }
-              />
+          {/* Technician Routes */}
+          <Route element={<TechnicianLayout />}>
+            <Route path={ROUTES.TECHNICIAN_DASHBOARD} element={<TechnicianDashboardPage />} />
+            <Route path={ROUTES.TECHNICIAN_TICKETS} element={<TechnicianTicketsPage />} />
+            <Route path={ROUTES.TECHNICIAN_NOTIFICATIONS} element={<NotificationsPage />} />
+            <Route path={ROUTES.TECHNICIAN_RESOURCES} element={<TechnicianResourcesPage />} />
+          </Route>
 
           <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
         </Routes>

@@ -309,4 +309,44 @@
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 90;
   }
+}/* OPTIMIZED PURE CSS HOVER FOR STUDENT PORTAL */
+.dashboard-sidebar.student-portal {
+  width: 64px !important;
+  min-width: 64px !important;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: width;
 }
+
+.dashboard-sidebar.student-portal:hover {
+  width: 240px !important;
+  min-width: 240px !important;
+  transition-delay: 0s !important;
+}
+
+/* Sync sidebar label visibility without delays */
+.student-portal .sidebar-label,
+.student-portal .logo-text {
+  transition: opacity 0.2s ease !important;
+  opacity: 0;
+}
+
+.student-portal:hover .sidebar-label,
+.student-portal:hover .logo-text {
+  opacity: 1;
+  transition-delay: 0.05s !important;
+}
+
+/* Optimize main content shifting */
+.student-portal ~ .dashboard-main {
+  margin-left: 64px !important;
+  width: calc(100% - 64px) !important;
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: margin-left;
+}
+
+.student-portal:hover ~ .dashboard-main {
+  margin-left: 240px !important;
+  width: calc(100% - 240px) !important;
+  transition-delay: 0s !important;
+}
+
