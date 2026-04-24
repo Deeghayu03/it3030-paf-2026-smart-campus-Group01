@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
-import { getMyNotifications, markAllAsRead, markAsRead } from '../../services/notificationService';
+import { getMyNotifications, markAllAsRead, markAsRead, deleteNotification, clearReadNotifications, getPreferences, togglePreference } from '../../services/notificationService';
 import { timeAgo } from '../../utils/helpers';
 import './NotificationsPage.css';
 
 const NotificationsPage = () => {
+  const { role } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(false);
+  const [preferences, setPreferences] = useState([]);
 
   useEffect(() => {
     fetchNotifications();
+    loadPreferences();
   }, []);
 
   const fetchNotifications = async () => {
@@ -43,6 +47,42 @@ const NotificationsPage = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await deleteNotification(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const handleClearRead = async () => {
+    try {
+      await clearReadNotifications();
+      await fetchNotifications();
+    } catch (error) {
+      console.error('Error clearing read notifications:', error);
+    }
+  };
+
+  const loadPreferences = async () => {
+    try {
+      const response = await getPreferences();
+      setPreferences(response.data);
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    }
+  };
+
+  const handleTogglePreference = async (category) => {
+    try {
+      await togglePreference(category);
+      await loadPreferences();
+    } catch (error) {
+      console.error('Error toggling preference:', error);
+    }
+  };
+
   const filteredNotifications = notifications.filter(notification => {
     if (filter === 'Unread') return !notification.isRead;
     if (filter === 'Read') return notification.isRead;
@@ -57,6 +97,7 @@ const NotificationsPage = () => {
       case 'TICKET_UPDATED': return '#2196F3';
       case 'TICKET_ASSIGNED': return '#9C27B0';
       case 'TICKET_RESOLVED': return '#52B788';
+      case 'TICKET_REJECTED': return '#DC2626';
       case 'NEW_COMMENT': return '#FF9800';
       default: return 'var(--primary)';
     }
@@ -76,28 +117,62 @@ const NotificationsPage = () => {
     return type.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
   };
 
+  const getTypeIcon = (type) => {
+    if (!type) return '🔔';
+    if (type === 'NEW_COMMENT') return '💬';
+    if (type.startsWith('BOOKING')) return '📅';
+    return '🎫';
+  };
+
   return (
     <>
       <div className="notifications-page">
-        <div className="notifications-header">
-          {!(localStorage.getItem('role') || '').toUpperCase().includes('TECHNICIAN') && (
-            <h1 className="notifications-title">Notifications</h1>
-          )}
-          <button className="mark-all-page-btn" onClick={handleMarkAllAsRead}>
-            Mark all as read
-          </button>
-        </div>
 
-        <div className="notifications-tabs">
-          {['All', 'Unread', 'Read'].map(tab => (
-            <button
-              key={tab}
-              className={`filter-tab ${filter === tab ? 'active' : ''}`}
-              onClick={() => setFilter(tab)}
-            >
-              {tab}
+        {role === 'STUDENT' && <div className="preferences-section">
+          <h3 className="preferences-title">Notification Preferences</h3>
+          <div className="preferences-toggles">
+            {['BOOKING', 'TICKET'].map(category => {
+              const pref = preferences.find(p => p.category === category);
+              const isEnabled = pref ? pref.enabled : true;
+              return (
+                <div key={category} className="preference-item">
+                  <span className="preference-label">
+                    {category === 'BOOKING' ? 'Booking Updates' : 'Ticket Updates'}
+                  </span>
+                  <div
+                    className={`toggle-switch ${isEnabled ? 'toggle-switch-on' : ''}`}
+                    onClick={() => handleTogglePreference(category)}
+                    role="switch"
+                    aria-checked={isEnabled}
+                  >
+                    <div className="toggle-thumb" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>}
+
+        <div className="notifications-toolbar">
+          <div className="notifications-tabs">
+            {['All', 'Unread', 'Read'].map(tab => (
+              <button
+                key={tab}
+                className={`filter-tab ${filter === tab ? 'active' : ''}`}
+                onClick={() => setFilter(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div className="toolbar-actions">
+            <button className="toolbar-btn" onClick={handleMarkAllAsRead}>
+              Mark all as read
             </button>
-          ))}
+            <button className="toolbar-btn toolbar-btn-danger" onClick={handleClearRead}>
+              Clear Read
+            </button>
+          </div>
         </div>
 
         <div className="notifications-container">
@@ -105,8 +180,8 @@ const NotificationsPage = () => {
             <div className="notifications-empty">Loading notifications...</div>
           ) : filteredNotifications.length > 0 ? (
             filteredNotifications.map(notification => (
-              <div 
-                key={notification.id} 
+              <div
+                key={notification.id}
                 className={`notification-card ${notification.isRead ? 'read' : 'unread'}`}
                 style={{ borderLeftColor: getBorderColor(notification.type) }}
               >
@@ -117,17 +192,26 @@ const NotificationsPage = () => {
                   <span className="notification-card-time">{timeAgo(notification.createdAt)}</span>
                 </div>
                 <div className="notification-card-middle">
-                  <p className="notification-card-message">{notification.message}</p>
+                  <p className="notification-card-message">
+                    <span className="notification-icon">{getTypeIcon(notification.type)}</span>
+                    {notification.message}
+                  </p>
                 </div>
                 <div className="notification-card-bottom">
                   {!notification.isRead && (
-                    <button 
-                      className="mark-read-btn" 
+                    <button
+                      className="mark-read-btn"
                       onClick={() => handleMarkAsRead(notification.id)}
                     >
                       Mark as read
                     </button>
                   )}
+                  <button
+                    className="delete-notification-btn"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(notification.id); }}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ))

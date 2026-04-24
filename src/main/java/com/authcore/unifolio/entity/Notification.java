@@ -1,5 +1,6 @@
 package com.authcore.unifolio.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ public class Notification {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"password", "hibernateLazyInitializer", "handler"})
     private User user;
 
     @Column(nullable = false)
@@ -33,7 +35,7 @@ public class Notification {
     public enum NotificationType {
         BOOKING_PENDING,
         BOOKING_APPROVED, BOOKING_REJECTED, BOOKING_CANCELLED,
-        TICKET_UPDATED, TICKET_ASSIGNED, TICKET_RESOLVED, NEW_COMMENT
+        TICKET_UPDATED, TICKET_ASSIGNED, TICKET_RESOLVED, TICKET_REJECTED, NEW_COMMENT, NEW_TICKET
     }
 
     @PrePersist

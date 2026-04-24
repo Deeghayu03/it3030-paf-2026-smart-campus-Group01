@@ -100,10 +100,38 @@ public class TicketService {
         }
 
         Ticket savedTicket = ticketRepository.save(ticket);
-        
+
         if (statusChanged) {
-             notificationService.createNotification(savedTicket.getReportedBy(), "Ticket " + ticket.getId() + " status updated",
-                    Notification.NotificationType.TICKET_UPDATED, savedTicket.getId(), "TICKET");
+            Ticket.TicketStatus newStatus = savedTicket.getStatus();
+            String studentMessage;
+            Notification.NotificationType studentType;
+
+            if (newStatus == Ticket.TicketStatus.RESOLVED) {
+                String notes = savedTicket.getResolutionNotes() != null ? savedTicket.getResolutionNotes() : "No notes provided.";
+                studentMessage = "Your ticket #" + savedTicket.getId() + " has been resolved. Notes: " + notes;
+                studentType = Notification.NotificationType.TICKET_RESOLVED;
+            } else if (newStatus == Ticket.TicketStatus.REJECTED) {
+                String reason = savedTicket.getRejectionReason() != null ? savedTicket.getRejectionReason() : "No reason provided.";
+                studentMessage = "Your ticket #" + savedTicket.getId() + " has been rejected. Reason: " + reason;
+                studentType = Notification.NotificationType.TICKET_REJECTED;
+            } else if (newStatus == Ticket.TicketStatus.IN_PROGRESS) {
+                studentMessage = "Your ticket #" + savedTicket.getId() + " is now being worked on.";
+                studentType = Notification.NotificationType.TICKET_UPDATED;
+            } else if (newStatus == Ticket.TicketStatus.CLOSED) {
+                studentMessage = "Your ticket #" + savedTicket.getId() + " has been closed.";
+                studentType = Notification.NotificationType.TICKET_UPDATED;
+            } else {
+                studentMessage = "Ticket #" + savedTicket.getId() + " status updated.";
+                studentType = Notification.NotificationType.TICKET_UPDATED;
+            }
+
+            notificationService.createNotification(savedTicket.getReportedBy(), studentMessage, studentType, savedTicket.getId(), "TICKET");
+
+            if (savedTicket.getAssignedTo() != null && !savedTicket.getAssignedTo().getEmail().equals(email)) {
+                notificationService.createNotification(savedTicket.getAssignedTo(),
+                        "Ticket #" + savedTicket.getId() + " status changed to " + newStatus.name().replace('_', ' ').toLowerCase() + ".",
+                        Notification.NotificationType.TICKET_UPDATED, savedTicket.getId(), "TICKET");
+            }
         }
         return mapToResponse(savedTicket);
     }

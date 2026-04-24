@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../api/axiosConfig";
 import { ROUTES } from "../../../constants/routes";
+import { AuthContext } from "../../../context/AuthContext";
 import "./NotificationBell.css";
 
 const NotificationBell = () => {
+  const { role } = useContext(AuthContext);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
@@ -58,7 +60,7 @@ const NotificationBell = () => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications(notifications.map(n =>
-        n.id === id ? { ...n, read: true } : n
+        n.id === id ? { ...n, isRead: true } : n
       ));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
@@ -66,10 +68,46 @@ const NotificationBell = () => {
     }
   };
 
+  const handleNotificationClick = async (notification) => {
+    // Navigate based on type
+    switch (notification.type) {
+      case "NEW_TICKET":
+      case "TICKET_UPDATED":
+        navigate("/admin/tickets");
+        break;
+      case "TICKET_ASSIGNED":
+        navigate("/technician/tickets");
+        break;
+      case "TICKET_RESOLVED":
+      case "NEW_COMMENT":
+      case "TICKET_REJECTED":
+        navigate("/tickets");
+        break;
+      case "BOOKING_CONFIRMED":
+      case "BOOKING_CANCELLED":
+      case "BOOKING_PENDING":
+      case "BOOKING_APPROVED":
+      case "BOOKING_REJECTED":
+        navigate("/bookings");
+        break;
+      default:
+        navigate(ROUTES.NOTIFICATIONS);
+        break;
+    }
+
+    // Mark as read if unread
+    if (!notification.isRead) {
+      await handleMarkAsRead(notification.id);
+    }
+
+    // Close the dropdown
+    setIsOpen(false);
+  };
+
   const handleMarkAllAsRead = async () => {
     try {
       await api.put("/notifications/read-all");
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all as read:", error);
@@ -124,10 +162,10 @@ const NotificationBell = () => {
               notifications.slice(0, 10).map(notification => (
                 <div
                   key={notification.id}
-                  className={`notification-item ${!notification.read ? "unread" : ""}`}
-                  onClick={() => handleMarkAsRead(notification.id)}
+                  className={`notification-item ${!notification.isRead ? "unread" : ""}`}
+                  onClick={() => handleNotificationClick(notification)}
                 >
-                  <div className={`notification-dot ${!notification.read ? "dot-unread" : "dot-read"}`}/>
+                  <div className={`notification-dot ${!notification.isRead ? "dot-unread" : "dot-read"}`}/>
                   <div className="notification-content">
                     <p className="notification-message">
                       {notification.message}
@@ -144,7 +182,13 @@ const NotificationBell = () => {
           <div
             className="panel-footer"
             onClick={() => {
-              navigate(ROUTES.NOTIFICATIONS);
+              if (role === 'ADMIN') {
+                navigate(ROUTES.ADMIN_NOTIFICATIONS);
+              } else if (role === 'TECHNICIAN') {
+                navigate(ROUTES.TECHNICIAN_NOTIFICATIONS);
+              } else {
+                navigate(ROUTES.NOTIFICATIONS);
+              }
               setIsOpen(false);
             }}
           >
