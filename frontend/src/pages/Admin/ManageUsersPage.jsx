@@ -41,7 +41,7 @@ const ManageUsersPage = () => {
   };
 
   return (
-    <DashboardLayout title="Manage Users">
+    <>
       <div className="manage-users-page">
 
         <section className="manage-users-banner">
@@ -111,7 +111,7 @@ const ManageUsersPage = () => {
         </div>
 
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -27,29 +27,7 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
           : 'Student Portal';
 
   const location = useLocation();
-  const getPageTitle = () => {
-    if (title) return title;
-    
-    const path = location.pathname;
-    const titleMap = {
-      [ROUTES.DASHBOARD]: 'Student Dashboard',
-      [ROUTES.RESOURCES]: 'Available Resources',
-      [ROUTES.BOOKINGS]: 'My Bookings',
-      [ROUTES.TICKETS]: 'My Tickets',
-      [ROUTES.NOTIFICATIONS]: 'My Notifications',
-      [ROUTES.ADMIN_DASHBOARD]: 'Admin Dashboard',
-      [ROUTES.ADMIN_USERS]: 'Manage Users',
-      [ROUTES.ADMIN_RESOURCES]: 'System Resources',
-      [ROUTES.ADMIN_BOOKINGS]: 'System Bookings',
-      [ROUTES.ADMIN_TICKETS]: 'System Tickets',
-      [ROUTES.ADMIN_NOTIFICATIONS]: 'System Notifications',
-      [ROUTES.TECHNICIAN_DASHBOARD]: 'Technician Dashboard',
-      [ROUTES.TECHNICIAN_RESOURCES]: 'Technician Resources',
-      [ROUTES.TECHNICIAN_TICKETS]: 'Assigned Tickets',
-      [ROUTES.TECHNICIAN_NOTIFICATIONS]: 'Technician Notifications',
-    };
-    return titleMap[path] || 'UniFolio';
-  };
+
 
   const handleLogout = () => {
     logout();
@@ -85,6 +63,32 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
           : studentNavItems;
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  const getTitle = (pathname) => {
+    // Technician
+    if (pathname.includes("/technician/dashboard")) return "Technician Dashboard";
+    if (pathname.includes("/technician/resources")) return "Resource Management";
+    if (pathname.includes("/technician/tickets")) return "Assigned Tickets";
+    if (pathname.includes("/technician/notifications")) return "Notifications";
+
+    // Student
+    if (pathname === "/dashboard") return "Student Dashboard";
+    if (pathname === "/resources") return "Resource Management";
+    if (pathname === "/bookings") return "My Bookings";
+    if (pathname === "/tickets") return "My Tickets";
+    if (pathname === "/notifications") return "Notifications";
+
+    // Admin
+    if (pathname === "/admin/dashboard") return "Admin Dashboard";
+    if (pathname === "/admin/users") return "Manage Users";
+    if (pathname === "/admin/resources") return "Resource Management";
+    if (pathname === "/admin/bookings") return "Booking Management";
+    if (pathname === "/admin/tickets") return "Ticket Management";
+
+    return "";
+  };
+
+  const currentTitle = getTitle(location.pathname);
 
   return (
     <div className="dashboard-wrapper">
@@ -147,11 +151,16 @@ const DashboardLayout = ({ title, notificationCount = 0, children }) => {
             >
               ☰
             </button>
-            <h1 className="page-title">{getPageTitle()}</h1>
+
+            <h2 className="topbar-page-title">{currentTitle}</h2>
           </div>
 
           <div className="navbar-right">
-            <span className="student-portal-text">{portalText}</span>
+            {location.pathname.startsWith("/technician") ? (
+              <span className="portal-badge technician">Technician Portal</span>
+            ) : !isAdmin && (
+              <span className="portal-badge student">Student Portal</span>
+            )}
             <NotificationBell />
           </div>
         </header>

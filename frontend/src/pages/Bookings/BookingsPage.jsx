@@ -275,8 +275,8 @@ const BookingsPage = () => {
           <div className="header-left">
             <div className="header-title-section">
               {/* Show title only for Admin Panel or when in Form mode */}
-              {(viewMode === 'admin' || showForm) && (
-                <h1>{showForm ? (isEditing ? 'Edit Booking' : 'Create New Booking') : 'Booking Management'}</h1>
+              {showForm && (
+                <h1>{isEditing ? 'Edit Booking' : 'Create New Booking'}</h1>
               )}
               
               {!showForm && (

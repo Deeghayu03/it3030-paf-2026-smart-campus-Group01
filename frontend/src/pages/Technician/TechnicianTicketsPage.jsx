@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import api from '../../api/axiosConfig';
+import './TechnicianTicketsPage.css';
 
 const TechnicianTicketsPage = () => {
     const [tickets, setTickets] = useState([]);
@@ -61,151 +62,179 @@ const TechnicianTicketsPage = () => {
     // Helper functions for badge colors
     const getStatusColor = (status) => {
         switch (status) {
-            case 'OPEN': return 'blue';
-            case 'IN_PROGRESS': return 'orange';
-            case 'RESOLVED': return 'green';
-            case 'REJECTED': return 'red';
-            case 'CLOSED': return 'gray';
-            default: return 'black';
+            case 'OPEN': return '#2563eb';
+            case 'IN_PROGRESS': return '#f59e0b';
+            case 'RESOLVED': return '#10b981';
+            case 'REJECTED': return '#ef4444';
+            case 'CLOSED': return '#6b7280';
+            default: return '#111827';
         }
     };
 
     const getPriorityColor = (priority) => {
         switch (priority) {
-            case 'CRITICAL': return 'red';
-            case 'HIGH': return 'orange';
-            case 'MEDIUM': return '#ffcc00'; // yellow
-            case 'LOW': return 'green';
-            default: return 'black';
+            case 'CRITICAL': return '#dc2626';
+            case 'HIGH': return '#ea580c';
+            case 'MEDIUM': return '#d97706';
+            case 'LOW': return '#16a34a';
+            default: return '#111827';
         }
     };
 
     return (
-        <DashboardLayout title="Assigned Tickets">
-            <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-                <h1 style={{ margin: '0 0 5px' }}>Assigned Tickets</h1>
-                <p style={{ color: '#666', marginBottom: '20px' }}>Tickets assigned to you by admin</p>
+        <>
+            <div className="content-container">
+                <div className="page">
+                    <header className="page-header">
+                        <p>Manage and update maintenance tasks assigned to you.</p>
+                    </header>
 
-                {error && <div style={{ color: 'red', marginBottom: '15px' }}>{error}</div>}
+                    <div className="page-body">
+                        {error && <div className="error-alert"><span className="icon">⚠</span> {error}</div>}
 
-                {loading ? (
-                    <div>Loading tickets...</div>
-                ) : tickets.length === 0 ? (
-                    <div style={{ padding: '20px', backgroundColor: '#f9f9f9', border: '1px solid #ddd', borderRadius: '4px' }}>
-                        No tickets assigned to you yet.
+                        {loading ? (
+                            <div className="loading-container">
+                                <div className="spinner"></div>
+                                <p>Loading tickets...</p>
+                            </div>
+                        ) : tickets.length === 0 ? (
+                            <div className="empty-state">
+                                <div className="empty-icon">🎫</div>
+                                <h3>No tickets assigned</h3>
+                                <p>You don't have any maintenance tickets assigned to you at the moment.</p>
+                            </div>
+                        ) : (
+                            <div className="tickets-table-container">
+                                <table className="tickets-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Reported By</th>
+                                            <th>Location</th>
+                                            <th>Category</th>
+                                            <th>Priority</th>
+                                            <th>Status</th>
+                                            <th>Created At</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {tickets.map(ticket => (
+                                            <tr key={ticket.id}>
+                                                <td className="ticket-id">#{ticket.id}</td>
+                                                <td>{ticket.reportedByName || ticket.reportedByEmail}</td>
+                                                <td>{ticket.location}</td>
+                                                <td>{ticket.category}</td>
+                                                <td>
+                                                    <span className="priority-badge" style={{ color: getPriorityColor(ticket.priority), backgroundColor: `${getPriorityColor(ticket.priority)}15` }}>
+                                                        {ticket.priority}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className="status-badge" style={{ color: getStatusColor(ticket.status), backgroundColor: `${getStatusColor(ticket.status)}15` }}>
+                                                        {ticket.status}
+                                                    </span>
+                                                </td>
+                                                <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
+                                                <td>
+                                                    <div className="action-btns">
+                                                        <button 
+                                                            className="btn-view"
+                                                            onClick={() => { setSelectedTicket(ticket); setShowViewModal(true); }}
+                                                        >
+                                                            View
+                                                        </button>
+                                                        {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
+                                                            <button 
+                                                                className="btn-update"
+                                                                onClick={() => openUpdateModal(ticket)}
+                                                            >
+                                                                Update
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
-                ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ backgroundColor: '#f0f0f0', borderBottom: '2px solid #ccc' }}>
-                                    <th style={{ padding: '10px' }}>ID</th>
-                                    <th style={{ padding: '10px' }}>Reported By</th>
-                                    <th style={{ padding: '10px' }}>Location</th>
-                                    <th style={{ padding: '10px' }}>Category</th>
-                                    <th style={{ padding: '10px' }}>Priority</th>
-                                    <th style={{ padding: '10px' }}>Status</th>
-                                    <th style={{ padding: '10px' }}>Created At</th>
-                                    <th style={{ padding: '10px' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {tickets.map(ticket => (
-                                    <tr key={ticket.id} style={{ borderBottom: '1px solid #eee' }}>
-                                        <td style={{ padding: '10px' }}>#{ticket.id}</td>
-                                        <td style={{ padding: '10px' }}>{ticket.reportedByName || ticket.reportedByEmail}</td>
-                                        <td style={{ padding: '10px' }}>{ticket.location}</td>
-                                        <td style={{ padding: '10px' }}>{ticket.category}</td>
-                                        <td style={{ padding: '10px', color: getPriorityColor(ticket.priority), fontWeight: 'bold' }}>{ticket.priority}</td>
-                                        <td style={{ padding: '10px', color: getStatusColor(ticket.status), fontWeight: 'bold' }}>{ticket.status}</td>
-                                        <td style={{ padding: '10px' }}>{new Date(ticket.createdAt).toLocaleDateString()}</td>
-                                        <td style={{ padding: '10px' }}>
-                                            <button 
-                                                onClick={() => { setSelectedTicket(ticket); setShowViewModal(true); }}
-                                                style={{ marginRight: '10px', padding: '5px 10px', cursor: 'pointer', backgroundColor: '#e0e0e0', border: '1px solid #ccc', borderRadius: '4px' }}
-                                            >
-                                                View
-                                            </button>
-                                            {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
-                                                <button 
-                                                    onClick={() => openUpdateModal(ticket)}
-                                                    style={{ padding: '5px 10px', cursor: 'pointer', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
-                                                >
-                                                    Update
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                </div>
             </div>
 
             {/* View Details Modal */}
             {showViewModal && selectedTicket && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '500px', maxHeight: '80vh', overflowY: 'auto' }}>
+                <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <h2>Ticket Details #{selectedTicket.id}</h2>
-                        <p><strong>Reported By:</strong> {selectedTicket.reportedByName || selectedTicket.reportedByEmail}</p>
-                        <p><strong>Location:</strong> {selectedTicket.location}</p>
-                        <p><strong>Category:</strong> {selectedTicket.category}</p>
-                        <p><strong>Priority:</strong> <span style={{ color: getPriorityColor(selectedTicket.priority), fontWeight: 'bold' }}>{selectedTicket.priority}</span></p>
-                        <p><strong>Status:</strong> <span style={{ color: getStatusColor(selectedTicket.status), fontWeight: 'bold' }}>{selectedTicket.status}</span></p>
-                        <div style={{ marginTop: '10px' }}><strong>Description:</strong> <p style={{ backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '4px', marginTop: '5px' }}>{selectedTicket.description}</p></div>
-                        <p><strong>Contact Details:</strong> {selectedTicket.contactDetails}</p>
+                        <div className="detail-row">
+                            <span className="detail-label">Reported By:</span>
+                            <span className="detail-value">{selectedTicket.reportedByName || selectedTicket.reportedByEmail}</span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="detail-label">Location:</span>
+                            <span className="detail-value">{selectedTicket.location}</span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="detail-label">Category:</span>
+                            <span className="detail-value">{selectedTicket.category}</span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="detail-label">Priority:</span>
+                            <span className="priority-badge" style={{ color: getPriorityColor(selectedTicket.priority), backgroundColor: `${getPriorityColor(selectedTicket.priority)}15` }}>
+                                {selectedTicket.priority}
+                            </span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="detail-label">Status:</span>
+                            <span className="status-badge" style={{ color: getStatusColor(selectedTicket.status), backgroundColor: `${getStatusColor(selectedTicket.status)}15` }}>
+                                {selectedTicket.status}
+                            </span>
+                        </div>
+                        
+                        <div style={{ marginTop: '24px' }}>
+                            <span className="detail-label">Description:</span>
+                            <div className="description-box">{selectedTicket.description}</div>
+                        </div>
+                        
+                        <div className="detail-row" style={{ marginTop: '16px' }}>
+                            <span className="detail-label">Contact Details:</span>
+                            <span className="detail-value">{selectedTicket.contactDetails}</span>
+                        </div>
                         
                         {selectedTicket.resolutionNotes && (
-                            <p style={{ backgroundColor: '#e8f5e9', padding: '10px', borderRadius: '4px' }}><strong>Resolution Notes:</strong> {selectedTicket.resolutionNotes}</p>
+                            <div style={{ marginTop: '16px' }}>
+                                <span className="detail-label">Resolution Notes:</span>
+                                <div className="description-box" style={{ backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }}>{selectedTicket.resolutionNotes}</div>
+                            </div>
                         )}
                         {selectedTicket.rejectionReason && (
-                            <p style={{ backgroundColor: '#ffebee', padding: '10px', borderRadius: '4px' }}><strong>Rejection Reason:</strong> {selectedTicket.rejectionReason}</p>
-                        )}
-
-                        <h3>Attachments</h3>
-                        {selectedTicket.attachmentPaths && selectedTicket.attachmentPaths.length > 0 ? (
-                            <ul>
-                                {selectedTicket.attachmentPaths.map((path, idx) => (
-                                    <li key={idx}><a href={`http://localhost:8080${path}`} target="_blank" rel="noreferrer">Download Attachment {idx + 1}</a></li>
-                                ))}
-                            </ul>
-                        ) : <p>No attachments.</p>}
-                        
-                        {selectedTicket.comments && selectedTicket.comments.length > 0 && (
-                            <div style={{ marginTop: '20px' }}>
-                                <h3>Comments</h3>
-                                {selectedTicket.comments.map((c, i) => (
-                                    <div key={i} style={{ padding: '10px', backgroundColor: '#f9f9f9', marginBottom: '10px', borderRadius: '4px' }}>
-                                        <strong>{c.userName}</strong> <span style={{ color: '#888', fontSize: '12px' }}>{new Date(c.createdAt).toLocaleString()}</span>
-                                        <p style={{ margin: '5px 0 0 0' }}>{c.content}</p>
-                                    </div>
-                                ))}
+                            <div style={{ marginTop: '16px' }}>
+                                <span className="detail-label">Rejection Reason:</span>
+                                <div className="description-box" style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>{selectedTicket.rejectionReason}</div>
                             </div>
                         )}
 
-                        <button 
-                            onClick={() => setShowViewModal(false)}
-                            style={{ padding: '8px 15px', marginTop: '20px', cursor: 'pointer', backgroundColor: '#e0e0e0', border: 'none', borderRadius: '4px' }}
-                        >
-                            Close
-                        </button>
+                        <div className="modal-actions">
+                            <button className="btn-cancel" onClick={() => setShowViewModal(false)}>Close</button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Update Status Modal */}
             {showUpdateModal && selectedTicket && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '400px' }}>
-                        <h2 style={{ marginTop: 0 }}>Update Ticket #{selectedTicket.id}</h2>
-                        <form onSubmit={handleUpdateSubmit}>
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Status</label>
+                <div className="modal-overlay" onClick={() => setShowUpdateModal(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h2>Update Ticket #{selectedTicket.id}</h2>
+                        <form onSubmit={handleUpdateSubmit} className="modal-form">
+                            <div className="form-group">
+                                <label>Status</label>
                                 <select 
                                     value={updateStatus} 
                                     onChange={(e) => setUpdateStatus(e.target.value)}
-                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                                     required
                                 >
                                     <option value="IN_PROGRESS">In Progress</option>
@@ -215,41 +244,43 @@ const TechnicianTicketsPage = () => {
                             </div>
 
                             {updateStatus === 'RESOLVED' && (
-                                <div style={{ marginBottom: '15px' }}>
-                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Resolution Notes</label>
+                                <div className="form-group">
+                                    <label>Resolution Notes</label>
                                     <textarea 
                                         value={resolutionNotes} 
                                         onChange={(e) => setResolutionNotes(e.target.value)} 
                                         required 
-                                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                                        rows={3} 
+                                        rows={4} 
+                                        placeholder="Describe how the issue was resolved..."
                                     />
                                 </div>
                             )}
 
                             {updateStatus === 'REJECTED' && (
-                                <div style={{ marginBottom: '15px' }}>
-                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Rejection Reason</label>
+                                <div className="form-group">
+                                    <label>Rejection Reason</label>
                                     <textarea 
                                         value={rejectionReason} 
                                         onChange={(e) => setRejectionReason(e.target.value)} 
                                         required 
-                                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                                        rows={3} 
+                                        rows={4} 
+                                        placeholder="Reason for rejecting this ticket..."
                                     />
                                 </div>
                             )}
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                                <button type="button" onClick={() => setShowUpdateModal(false)} style={{ padding: '8px 15px', cursor: 'pointer', backgroundColor: '#e0e0e0', border: 'none', borderRadius: '4px' }}>Cancel</button>
-                                <button type="submit" style={{ padding: '8px 15px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}>Save Changes</button>
+                            <div className="modal-actions">
+                                <button type="button" className="btn-cancel" onClick={() => setShowUpdateModal(false)}>Cancel</button>
+                                <button type="submit" className="btn-save">Save Changes</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 };
 
 export default TechnicianTicketsPage;
+
+

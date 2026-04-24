@@ -77,10 +77,12 @@ const NotificationsPage = () => {
   };
 
   return (
-    <DashboardLayout title="Notifications">
+    <>
       <div className="notifications-page">
         <div className="notifications-header">
-          <h1 className="notifications-title">Notifications</h1>
+          {!(localStorage.getItem('role') || '').toUpperCase().includes('TECHNICIAN') && (
+            <h1 className="notifications-title">Notifications</h1>
+          )}
           <button className="mark-all-page-btn" onClick={handleMarkAllAsRead}>
             Mark all as read
           </button>
@@ -136,7 +138,7 @@ const NotificationsPage = () => {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
