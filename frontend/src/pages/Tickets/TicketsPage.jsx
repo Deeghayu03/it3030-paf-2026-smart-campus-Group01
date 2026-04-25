@@ -20,6 +20,12 @@ const CATEGORY_TO_TYPE = {
 };
 
 const TicketsPage = () => {
+  const formatField = (val) => {
+    if (!val) return 'N/A';
+    return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+
   const [tickets, setTickets] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -324,15 +330,15 @@ const TicketsPage = () => {
                   <div className="ticket-header">
                     <div className="ticket-id">#{ticket.id}</div>
                     <div className={`ticket-status status-${ticket.status?.toLowerCase()}`}>
-                      {ticket.status}
+                      {formatField(ticket.status)}
                     </div>
                   </div>
                   
                   <div className="ticket-description">{ticket.description}</div>
                   
-                  <div className="ticket-category">Category: {ticket.category}</div>
+                  <div className="ticket-category">Category: {formatField(ticket.category)}</div>
                   <div className="ticket-resource">Location: {ticket.location}</div>
-                  <div className="ticket-priority">Priority: {ticket.priority}</div>
+                  <div className="ticket-priority">Priority: {formatField(ticket.priority)}</div>
                   
                   <div className="ticket-date">
                     Created: {formatTime(ticket.createdAt)}
@@ -513,13 +519,13 @@ const TicketsPage = () => {
                   <div className="status-group">
                     <label className="status-label">Status</label>
                     <div className={`status-badge status-${selectedTicket.status?.toLowerCase()}`}>
-                      {selectedTicket.status}
+                      {formatField(selectedTicket.status)}
                     </div>
                   </div>
                   <div className="status-group">
                     <label className="status-label">Priority</label>
                     <div className={`priority-badge priority-${selectedTicket.priority?.toLowerCase()}`}>
-                      {selectedTicket.priority}
+                      {formatField(selectedTicket.priority)}
                     </div>
                   </div>
                 </div>
@@ -529,7 +535,7 @@ const TicketsPage = () => {
                   <div className="info-row">
                     <div className="info-item">
                       <label>Category</label>
-                      <div className="info-value">{selectedTicket.category}</div>
+                      <div className="info-value">{formatField(selectedTicket.category)}</div>
                     </div>
                     <div className="info-item">
                       <label>Location</label>
@@ -544,6 +550,26 @@ const TicketsPage = () => {
                   <div className="description-content">
                     {selectedTicket.description}
                   </div>
+                </div>
+
+                {/* Attachments Section */}
+                <div className="attachments-section" style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                  <h4 style={{ marginBottom: '10px', color: '#2D6A4F' }}>Attachments ({selectedTicket.attachmentPaths?.length || 0})</h4>
+                  {selectedTicket.attachmentPaths && selectedTicket.attachmentPaths.length > 0 ? (
+                    <div className="attachment-list">
+                      {selectedTicket.attachmentPaths.map((path, index) => (
+                        <a 
+                          key={index}
+                          href={`http://localhost:8080/${path}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: 'block', marginBottom: '8px', color: '#52B788', textDecoration: 'none', fontWeight: '500' }}
+                        >
+                          📎 Attachment {index + 1}
+                        </a>
+                      ))}
+                    </div>
+                  ) : <p style={{ fontSize: '14px', color: '#666' }}>No attachments</p>}
                 </div>
 
                 {/* Contact Information */}
