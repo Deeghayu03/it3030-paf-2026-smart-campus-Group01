@@ -129,18 +129,16 @@ const ManageUsersPage = () => {
   return (
     <DashboardLayout title="Manage Users">
       <div style={styles.container}>
-        <div style={styles.header}>
-          <h2>User Directory</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #e0e0e0' }}>
+          <div style={{ ...styles.tabs, marginBottom: 0, borderBottom: 'none' }}>
+            <div style={styles.tab(activeTab === 'STUDENTS')} onClick={() => setActiveTab('STUDENTS')}>Students</div>
+            <div style={styles.tab(activeTab === 'TECHNICIANS')} onClick={() => setActiveTab('TECHNICIANS')}>Technicians</div>
+          </div>
           {activeTab === 'TECHNICIANS' && (
             <button style={styles.addButton} onClick={() => setIsModalOpen(true)}>
               + Add Technician
             </button>
           )}
-        </div>
-
-        <div style={styles.tabs}>
-          <div style={styles.tab(activeTab === 'STUDENTS')} onClick={() => setActiveTab('STUDENTS')}>Students</div>
-          <div style={styles.tab(activeTab === 'TECHNICIANS')} onClick={() => setActiveTab('TECHNICIANS')}>Technicians</div>
         </div>
 
         {loading ? (

@@ -1,3 +1,22 @@
+/**
+ * COMPONENT: NotificationBell
+ * FLOW: Mounts → polls /unread-count every 30s → 
+ *       on click fetches /notifications/my → 
+ *       on notification click → marks read → navigates
+ */
+
+/*
+ * ============================================
+ * NOTIFICATION INTERACTION FLOW:
+ * 1. userEffect sets up 30-second polling interval
+ * 2. setInterval calls fetchUnreadCount()
+ * 3. User clicks bell → fetchNotifications() populates dropdown
+ * 4. User clicks a notification → handleNotificationClick()
+ * 5. App navigates based on notification type
+ * 6. Backend updated via handleMarkAsRead()
+ * ============================================
+ */
+
 import { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../api/axiosConfig";
@@ -14,6 +33,11 @@ const NotificationBell = () => {
   const panelRef = useRef(null);
   const navigate = useNavigate();
 
+  /**
+   * Fetches unread notification count from backend
+   * CALLS: GET /api/notifications/unread-count
+   * UPDATES: unreadCount state
+   */
   const fetchUnreadCount = async () => {
     try {
       const response = await api.get("/notifications/unread-count");
@@ -23,6 +47,11 @@ const NotificationBell = () => {
     }
   };
 
+  /**
+   * Fetches the latest 10 notifications for the display panel
+   * CALLS: GET /api/notifications/my
+   * UPDATES: notifications state
+   */
   const fetchNotifications = async () => {
     setLoading(true);
     try {
@@ -35,12 +64,19 @@ const NotificationBell = () => {
     }
   };
 
+  /**
+   * INITIALIZATION: Sets up polling and cleanup
+   */
   useEffect(() => {
     fetchUnreadCount();
+    // 30 second background refresh
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  /**
+   * UI SYNC: Handles closing dropdown when clicking outside
+   */
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
@@ -51,14 +87,22 @@ const NotificationBell = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * Toggle panel visibility and trigger data fetch if opening
+   */
   const handleBellClick = () => {
     if (!isOpen) fetchNotifications();
     setIsOpen(!isOpen);
   };
 
+  /**
+   * Synchronization with backend to persist read status
+   * CALLS: PUT /api/notifications/{id}/read
+   */
   const handleMarkAsRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
+      // Pessimistic UI update: verify success before updating local state
       setNotifications(notifications.map(n =>
         n.id === id ? { ...n, isRead: true } : n
       ));
@@ -68,8 +112,12 @@ const NotificationBell = () => {
     }
   };
 
+  /**
+   * Router logic: Decides where to send the user based on notification category
+   * UPDATES: window.location via useNavigate
+   */
   const handleNotificationClick = async (notification) => {
-    // Navigate based on type
+    // Decision matrix for contextual navigation
     switch (notification.type) {
       case "NEW_TICKET":
       case "TICKET_UPDATED":
@@ -95,15 +143,18 @@ const NotificationBell = () => {
         break;
     }
 
-    // Mark as read if unread
+    // Automark as read upon interaction
     if (!notification.isRead) {
       await handleMarkAsRead(notification.id);
     }
 
-    // Close the dropdown
     setIsOpen(false);
   };
 
+  /**
+   * Performs bulk update on all unread notifications
+   * CALLS: PUT /api/notifications/read-all
+   */
   const handleMarkAllAsRead = async () => {
     try {
       await api.put("/notifications/read-all");
@@ -114,6 +165,9 @@ const NotificationBell = () => {
     }
   };
 
+  /**
+   * Humanizes ISO timestamps into relative time strings
+   */
   const timeAgo = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -201,3 +255,4 @@ const NotificationBell = () => {
 };
 
 export default NotificationBell;
+
