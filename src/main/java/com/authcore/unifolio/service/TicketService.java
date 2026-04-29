@@ -49,16 +49,17 @@ public class TicketService {
             resourceRepository.findById(request.getResourceId()).ifPresent(ticket::setResource);
         }
         
-        // Field missing in Entity but requested by prompt context mapping skipped: category, contactDetails
-        
         Ticket savedTicket = ticketRepository.save(ticket);
 
-        if (savedTicket.getPriority() == Ticket.TicketPriority.CRITICAL) {
-            List<User> admins = userRepository.findByRole(User.Role.ADMIN);
-            for (User admin : admins) {
-                notificationService.createNotification(admin, "Critical Ticket Reported: " + savedTicket.getId(),
-                        Notification.NotificationType.TICKET_UPDATED, savedTicket.getId(), "TICKET");
-            }
+        List<User> admins = userRepository.findByRole(User.Role.ADMIN);
+        for (User admin : admins) {
+            notificationService.createNotification(
+                    admin,
+                    "New ticket #" + savedTicket.getId() + " submitted by " + reportedBy.getEmail() + " at " + savedTicket.getLocation() + " [" + savedTicket.getPriority() + "]",
+                    Notification.NotificationType.NEW_TICKET,
+                    savedTicket.getId(),
+                    "TICKET"
+            );
         }
         return mapToResponse(savedTicket);
     }

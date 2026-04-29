@@ -5,6 +5,12 @@ import ticketService from '../../services/ticketService';
 import './AdminTicketsPage.css';
 
 const AdminTicketsPage = () => {
+  const formatField = (val) => {
+    if (!val) return 'N/A';
+    return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -179,9 +185,9 @@ const AdminTicketsPage = () => {
                     <td>#{ticket.id}</td>
                     <td>{ticket.reportedByName || ticket.reportedByEmail}</td>
                     <td>{ticket.location}</td>
-                    <td>{ticket.category}</td>
-                    <td><span className={`badge priority-${ticket.priority}`}>{ticket.priority}</span></td>
-                    <td><span className={`badge status-${ticket.status}`}>{ticket.status}</span></td>
+                    <td>{formatField(ticket.category)}</td>
+                    <td><span className={`badge priority-${ticket.priority}`}>{formatField(ticket.priority)}</span></td>
+                    <td><span className={`badge status-${ticket.status}`}>{formatField(ticket.status)}</span></td>
                     {activeTab === 'Updated by Technicians' && (
                       <td className="tech-notes-cell">
                         {ticket.resolutionNotes && <div className="inline-note res-note"><strong>Res:</strong> {ticket.resolutionNotes}</div>}
@@ -216,9 +222,9 @@ const AdminTicketsPage = () => {
               <div className="ticket-details-grid">
                 <div><strong>Reported By:</strong> {selectedTicket.reportedByName} ({selectedTicket.reportedByEmail})</div>
                 <div><strong>Location:</strong> {selectedTicket.location}</div>
-                <div><strong>Category:</strong> {selectedTicket.category}</div>
-                <div><strong>Priority:</strong> {selectedTicket.priority}</div>
-                <div><strong>Status:</strong> {selectedTicket.status}</div>
+                <div><strong>Category:</strong> {formatField(selectedTicket.category)}</div>
+                <div><strong>Priority:</strong> {formatField(selectedTicket.priority)}</div>
+                <div><strong>Status:</strong> {formatField(selectedTicket.status)}</div>
                 <div><strong>Assigned To:</strong> {selectedTicket.assignedToName || 'Unassigned'}</div>
                 <div className="full-width"><strong>Description:</strong> <p className="desc-box">{selectedTicket.description}</p></div>
                 {selectedTicket.contactDetails && <div className="full-width"><strong>Contact:</strong> {selectedTicket.contactDetails}</div>}
@@ -233,11 +239,21 @@ const AdminTicketsPage = () => {
 
               <div className="attachments-section">
                 <h3>Attachments ({selectedTicket.attachmentPaths?.length || 0})</h3>
-                <ul className="attachment-list">
-                  {selectedTicket.attachmentPaths && selectedTicket.attachmentPaths.map((path, idx) => (
-                    <li key={idx}><a href={`http://localhost:8080${path}`} target="_blank" rel="noreferrer">Download File {idx + 1}</a></li>
-                  ))}
-                </ul>
+                {selectedTicket.attachmentPaths && selectedTicket.attachmentPaths.length > 0 ? (
+                  <div className="attachment-list">
+                    {selectedTicket.attachmentPaths.map((path, index) => (
+                      <a 
+                        key={index}
+                        href={`http://localhost:8080/${path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: 'block', marginBottom: '8px', color: '#52B788', textDecoration: 'none', fontWeight: '500' }}
+                      >
+                        📎 Attachment {index + 1}
+                      </a>
+                    ))}
+                  </div>
+                ) : <p>No attachments</p>}
               </div>
 
               <div className="comments-section">
