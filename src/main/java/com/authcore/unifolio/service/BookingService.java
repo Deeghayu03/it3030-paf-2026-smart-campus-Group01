@@ -40,6 +40,12 @@ public class BookingService {
         Resource resource = resourceRepository.findById(request.getResourceId())
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
 
+        if (resource.getStatus() != Resource.ResourceStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This resource is currently " + resource.getStatus() + " and cannot be booked"
+            );
+        }
         if (request.getBookingDate() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking date is required");
         }
@@ -152,6 +158,12 @@ public class BookingService {
         if (request.getResourceId() != null && !request.getResourceId().equals(booking.getResource().getId())) {
             resourceToValidate = resourceRepository.findById(request.getResourceId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found"));
+        }
+        if (resourceToValidate.getStatus() != Resource.ResourceStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This resource is currently " + resourceToValidate.getStatus() + " and cannot be booked"
+            );
         }
 
         // Check for conflicts excluding the current booking

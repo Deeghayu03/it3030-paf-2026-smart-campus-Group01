@@ -148,16 +148,51 @@ const AdminResourcesPage = () => {
 
         try {
             await deleteResource(resourceToDelete.id);
-            setResources((prev) => prev.filter((r) => r.id !== resourceToDelete.id));
+
+            setResources((prev) =>
+                prev.filter((r) => r.id !== resourceToDelete.id)
+            );
+
             showToast(resourceToDelete.name || 'Resource');
-            setResourceToDelete(null);
         } catch (error) {
-            console.error('Failed to delete resource:', error);
-            alert('Failed to delete resource. Please try again.');
+            if (resourceToDelete.status === 'OUT_OF_SERVICE') {
+                setSuccessMessage(
+                    'This resource is already OUT_OF_SERVICE and cannot be deleted because it has booking history.'
+                );
+            } else {
+                try {
+                    const response = await api.patch(
+                        `/resources/${resourceToDelete.id}/status?status=OUT_OF_SERVICE`
+                    );
+
+                    const updatedResource =
+                        response.data?.data || response.data?.resource || response.data;
+
+                    setResources((prev) =>
+                        prev.map((r) =>
+                            r.id === resourceToDelete.id ? updatedResource : r
+                        )
+                    );
+
+                    setSuccessMessage(
+                        'Resource has booking history — marked as OUT_OF_SERVICE instead.'
+                    );
+                } catch (statusError) {
+                    setError(
+                        statusError.response?.data?.message ||
+                        'Failed to update resource status.'
+                    );
+                }
+            }
+
+            setTimeout(() => {
+                setSuccessMessage('');
+                setError('');
+            }, 4000);
+        } finally {
             setResourceToDelete(null);
         }
     };
-
     const handleDownloadResourcePdf = (resource) => {
         const doc = new jsPDF();
 
@@ -273,7 +308,12 @@ const AdminResourcesPage = () => {
             };
 
             if (editingResourceId) {
-                const response = await updateResource(editingResourceId, payload);
+                const currentResource = resources.find(r => r.id === editingResourceId);
+
+                const response = await updateResource(editingResourceId, {
+                    ...payload,
+                    status: currentResource?.status || 'ACTIVE'  // ← keeps existing status
+                });
                 const updatedResource = response.data?.data || response.data?.resource || response.data;
 
                 setResources((prev) =>
@@ -283,15 +323,6 @@ const AdminResourcesPage = () => {
                 );
 
                 setSuccessMessage('Resource updated successfully');
-            } else {
-                const response = await createResource({
-                    ...payload,
-                    status: 'ACTIVE'
-                });
-                const createdResource = response.data?.data || response.data?.resource || response.data;
-
-                setResources((prev) => [createdResource, ...prev]);
-                setSuccessMessage('Resource created successfully');
             }
 
             resetForm();
@@ -612,8 +643,9 @@ const AdminResourcesPage = () => {
                             <p>
                                 Are you sure you want to delete <strong>{resourceToDelete.name}</strong>?
                             </p>
-                            <p className="delete-warning">This action cannot be undone.</p>
-
+                            <p className="delete-warning">
+                                If this resource has booking history, it will be marked as OUT_OF_SERVICE instead.
+                            </p>
                             <div className="delete-modal-actions">
                                 <button
                                     type="button"

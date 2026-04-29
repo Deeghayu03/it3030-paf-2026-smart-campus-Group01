@@ -15,6 +15,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUserId(Long userId);
     List<Booking> findByUser(User user);
     List<Booking> findByResourceIdAndBookingDateAndStatusIn(Long resourceId, LocalDate bookingDate, List<Booking.BookingStatus> statuses);
+    boolean existsByResourceId(Long resourceId);
 
     @Query("""
         SELECT b.resource.name, COUNT(b)
